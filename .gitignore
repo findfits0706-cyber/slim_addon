@@ -1,0 +1,52 @@
+# Local and production secrets
+.env
+.env.*
+!.env.example
+config/findpilates.php
+config/*.local.php
+public_html/app/config.local.php
+public_html/admission/inc/config.local.php
+
+# Production or private data
+backups/
+logs/
+*.log
+# Keep schema-only SQL/migrations trackable; ignore likely private dumps.
+*.dump.sql
+*_dump.sql
+*production*.sql
+*prod*.sql
+*.sql.gz
+*.dump
+*.bak
+*.backup
+maildata/
+private/
+storage/private/
+storage/admission_photos/
+public_html/admission/tmp/
+
+# Generated or sensitive fixtures
+fixtures/private/
+fixtures/customer/
+fixtures/slim-html/
+slim-html/
+analysis-output/
+extension-analysis-output/
+*.har
+
+# Runtime uploads and photos
+uploads/admission_photos/
+public_html/uploads/admission_photos/
+Downloads/FIND-SLIM/
+
+# Tooling noise
+.agents/
+.codex/
+node_modules/
+vendor/
+.phpunit.result.cache
+.coverage/
+coverage/
+.DS_Store
+Thumbs.db
