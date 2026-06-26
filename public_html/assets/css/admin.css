@@ -354,6 +354,28 @@ button,
   color: #b3261e;
 }
 
+.extension-pairing-code {
+  display: grid;
+  gap: 8px;
+  max-width: 360px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(47, 42, 40, 0.14);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.extension-pairing-code span,
+.extension-pairing-code small {
+  color: var(--color-muted);
+}
+
+.extension-pairing-code strong {
+  color: var(--color-main);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 30px;
+  letter-spacing: 0.08em;
+}
 
 .admin-nav a.is-current,
 .admin-nav a[aria-current="page"] {

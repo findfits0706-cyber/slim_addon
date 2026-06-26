@@ -4,7 +4,7 @@ Find Pilates admission form, admin workflow, Edge extension, and SLIM SNG assist
 
 ## Current Status
 
-This repository currently contains the Prompt 2 admin workflow and SLIM operation queue foundation plus the existing Find Pilates PHP application copied from the local `findpilates.jp` workspace.
+This repository currently contains the Prompt 3 extension API and short-lived token foundation plus the existing Find Pilates PHP application copied from the local `findpilates.jp` workspace.
 
 - integration specification
 - progress checklist
@@ -16,8 +16,11 @@ This repository currently contains the Prompt 2 admin workflow and SLIM operatio
 - admission MySQL repository and migration
 - SLIM operation queue repository and migration
 - admin readiness/progress UI
+- Edge extension pairing and JSON API foundation
+- short-lived bearer token, lock, and photo-token migrations
 - server-side admission fee tests
 - SLIM operation generation tests
+- extension API response safety tests
 - dry-run legacy admission JSON import command
 
 ## Key Documents
@@ -25,6 +28,7 @@ This repository currently contains the Prompt 2 admin workflow and SLIM operatio
 - `docs/slim-integration-spec.md`
 - `docs/slim-integration-progress.md`
 - `docs/slim-field-inventory.md`
+- `docs/extension-api.md`
 - `FindPilates_SLIM_最終設計.md`
 - `FindPilates_Codex_実装プロンプト集.md`
 
@@ -35,6 +39,7 @@ Apply these migrations in order before using the admission and SLIM preparation 
 ```powershell
 database/migrations/20260626_admissions_mysql.sql
 database/migrations/20260626_admission_slim_operations.sql
+database/migrations/20260626_extension_api.sql
 ```
 
 Legacy admission JSON can be checked without writing:
@@ -59,6 +64,7 @@ Individual checks:
 php .\tests\trial_schedule_unit.php
 php .\tests\admission_fee_unit.php
 php .\tests\slim_operations_unit.php
+php .\tests\extension_api_unit.php
 php .\scripts\import-admissions-json.php --source=.\tests\fixtures\admission_legacy_sample.json
 ```
 

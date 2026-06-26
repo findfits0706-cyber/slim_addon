@@ -16,6 +16,7 @@ function admin_nav_items(): array
         base_path('/admin/schedule-import.php') => 'CSV取込',
         base_path('/admin/bookings.php') => '体験申込一覧',
         base_path('/admin/admissions.php') => '入会受付',
+        base_path('/admin/extension.php') => 'Edge接続',
         base_path('/admin/campaigns.php') => 'キャンペーン設定',
     ];
 }

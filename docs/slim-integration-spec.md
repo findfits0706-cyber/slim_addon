@@ -1,6 +1,6 @@
 # Find Pilates x SLIM SNG Integration Spec
 
-Status: Prompt 2 admin workflow and SLIM operation queue foundation. This document is the working source of truth until saved SLIM HTML and a safe DB-backed test environment are added.
+Status: Prompt 3 extension API and short-lived token foundation. This document is the working source of truth until saved SLIM HTML, the Edge extension, and a safe DB-backed test environment are added.
 
 ## Purpose
 
@@ -188,7 +188,10 @@ Minimum tables planned:
 - `admission_slim_events`
 - `admission_locks`
 - `extension_pairing_codes`
+- `extension_pairing_attempts`
 - `extension_access_tokens`
+- `extension_photo_tokens`
+- `extension_api_events`
 
 Sensitive health information stays in `admission_sensitive` and is not returned to Edge extension APIs.
 
@@ -200,9 +203,9 @@ Operation regeneration is conservative. Not-started operations may be regenerate
 
 ## API Boundary
 
-Base path example: `/api/v1/extension/`.
+Base path: `/api/v1/extension/`.
 
-Planned endpoints:
+Implemented Prompt 3 endpoints:
 
 - `POST pair`
 - `GET me`
@@ -226,6 +229,8 @@ Authentication:
 - Never embed fixed API keys or SLIM credentials in extension source.
 
 Every API response should include `Cache-Control: no-store`.
+
+The API router lives at `public_html/api/v1/extension/index.php`, with Apache rewrite support from `public_html/api/v1/extension/.htaccess`. If rewrite is unavailable on Xserver, the same router can be called with `index.php?route=...`.
 
 ## SLIM Page Identification
 

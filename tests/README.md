@@ -19,6 +19,7 @@ The check currently:
 - runs `tests/trial_schedule_unit.php`
 - runs `tests/admission_fee_unit.php`
 - runs `tests/slim_operations_unit.php`
+- runs `tests/extension_api_unit.php`
 - runs the legacy admission JSON import command in dry-run mode with `tests/fixtures/admission_legacy_sample.json`
 
 Individual checks:
@@ -27,7 +28,8 @@ Individual checks:
 php .\tests\trial_schedule_unit.php
 php .\tests\admission_fee_unit.php
 php .\tests\slim_operations_unit.php
+php .\tests\extension_api_unit.php
 php .\scripts\import-admissions-json.php --source=.\tests\fixtures\admission_legacy_sample.json
 ```
 
-DB-backed admission save/list and SLIM operation persistence behavior are not covered here until a safe local or staging MySQL database is provided.
+DB-backed admission save/list, SLIM operation persistence, and live extension endpoint behavior are not covered here until a safe local or staging MySQL database is provided.

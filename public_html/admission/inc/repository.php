@@ -103,7 +103,7 @@ function admission_record_from_db_row(array $row, array $photos = [], array $ope
 function admission_fetch_photo_records(int $admissionId): array
 {
     $stmt = db()->prepare(
-        'SELECT storage_path, original_filename, mime_type, file_size, sha256, created_at
+        'SELECT id, storage_path, original_filename, mime_type, file_size, sha256, created_at
            FROM admission_photos
           WHERE admission_id = :admission_id
           ORDER BY id ASC'
@@ -112,6 +112,7 @@ function admission_fetch_photo_records(int $admissionId): array
     $items = [];
     foreach ($stmt->fetchAll() as $row) {
         $items[] = [
+            'id' => (int)$row['id'],
             'ok' => true,
             'path' => (string)$row['storage_path'],
             'archived_path' => (string)$row['storage_path'],

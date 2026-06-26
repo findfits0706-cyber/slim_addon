@@ -36,6 +36,11 @@ return [
         'api_base_path' => '/api/v1/extension',
         'pairing_code_ttl_seconds' => 300,
         'access_token_ttl_seconds' => 8 * 60 * 60,
+        'lock_ttl_seconds' => 600,
+        'photo_token_ttl_seconds' => 300,
+        'json_body_max_bytes' => 65536,
+        'pairing_attempt_window_seconds' => 600,
+        'pairing_attempt_limit' => 10,
         'allowed_origins' => [
             'chrome-extension://replace-with-edge-extension-id',
         ],

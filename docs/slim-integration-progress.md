@@ -56,12 +56,12 @@ Status legend:
 
 | Item | Status |
 |---|---|
-| Pairing code exchange | Not started |
-| Extension bearer token storage | Not started |
-| Minimum admissions list/detail responses | Not started |
-| Lock heartbeat and release | Not started |
-| Progress event endpoints | Not started |
-| Photo token endpoint | Not started |
+| Pairing code exchange | Done |
+| Extension bearer token storage | Done |
+| Minimum admissions list/detail responses | Done |
+| Lock heartbeat and release | Done |
+| Progress event endpoints | Done |
+| Photo token endpoint | Done |
 
 ### Phase 4: Edge Foundation and SLIM Analysis
 
@@ -119,6 +119,7 @@ Last result in this workspace:
 - `tests/trial_schedule_unit.php` passed.
 - `tests/admission_fee_unit.php` passed.
 - `tests/slim_operations_unit.php` passed.
+- `tests/extension_api_unit.php` passed.
 - `scripts/import-admissions-json.php --source=tests/fixtures/admission_legacy_sample.json` dry-run passed.
 - `php.exe` execution required elevated tool permission because the sandbox denied it.
 
@@ -129,9 +130,42 @@ Current expected behavior:
 - runs imported trial schedule unit checks
 - runs Prompt 1 admission fee and validation unit checks
 - runs Prompt 2 SLIM operation generation and readiness unit checks
+- runs Prompt 3 extension API response-safety unit checks
 - runs legacy admission JSON import dry-run with an anonymous fixture
 
-DB-backed admission save/list and SLIM operation persistence behavior still need a safe local or staging MySQL database with the Prompt 1 and Prompt 2 migrations applied.
+DB-backed admission save/list, SLIM operation persistence, and live extension endpoint behavior still need a safe local or staging MySQL database with the Prompt 1, Prompt 2, and Prompt 3 migrations applied.
+
+## Prompt 3: Extension API and Short-Lived Auth
+
+Implemented in this workspace:
+
+- `/admin/extension.php` issues one-time pairing codes and lists/revokes active extension access tokens.
+- `/api/v1/extension/` routes JSON endpoints through `public_html/app/extension-api.php`.
+- `POST /pair` exchanges a one-time pairing code and `installation_id` for an 8-hour bearer token.
+- Access tokens are stored as hashes only and must be used with `Authorization: Bearer` plus `X-Extension-Installation-Id`.
+- Admission list responses are intentionally minimal and exclude names/phone numbers.
+- Transfer detail responses exclude health payload, terms details, admin notes, DB paths, and SLIM credentials.
+- Admission locks support acquire, heartbeat, and release with owner conflict responses.
+- Operation fill-result and completion endpoints write non-PII SLIM events and enforce order/lock checks.
+- Member number update requires version and lock checks, with overwrite confirmation for differences.
+- Photo downloads use one-time short-lived tokens and never expose physical paths.
+- CORS allowlisting is configurable while bearer token authentication remains mandatory.
+
+Migration:
+
+- Apply `database/migrations/20260626_extension_api.sql` after the Prompt 1 and Prompt 2 migrations.
+- Set `extension.transfer_enabled` to `true` in private config only when the extension API should be live.
+
+Docs:
+
+- `docs/extension-api.md` describes endpoint contracts, examples, errors, pairing, revocation, and Xserver settings.
+
+Human review still recommended:
+
+- Apply the Prompt 3 migration to a safe DB and open `/admin/extension.php`.
+- Confirm pairing code issuance and token revocation in staging.
+- Exercise API endpoints with a temporary token using only anonymous test admissions.
+- Confirm Xserver rewrite behavior for `/api/v1/extension/{route}`; use `index.php?route=...` if rewrite is unavailable.
 
 ## Prompt 2: Admin UI and Operation Queue
 
