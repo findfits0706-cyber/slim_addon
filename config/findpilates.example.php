@@ -42,7 +42,7 @@ return [
         'pairing_attempt_window_seconds' => 600,
         'pairing_attempt_limit' => 10,
         'allowed_origins' => [
-            'chrome-extension://replace-with-edge-extension-id',
+            'chrome-extension://gdelgjpjkkjgldmchikcbbkklobcppnj',
         ],
         'transfer_enabled' => true,
         'dry_run_default' => true,
