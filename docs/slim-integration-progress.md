@@ -30,7 +30,7 @@ Status legend:
 
 | Item | Status |
 |---|---|
-| Confirm existing PHP files and routes | Blocked: PHP repo not present |
+| Confirm existing PHP files and routes | Ready: PHP repo copied; detailed review still needed |
 | Remove JSON as production storage | Not started |
 | Implement server fee service | Not started |
 | Update public form fields | Not started |
@@ -130,10 +130,35 @@ No production application test can run until `public_html/` and related files ar
 
 Prompt 1 should not be implemented until these are present:
 
-- existing PHP application under `public_html/`
-- existing config, DB, auth, CSRF, admission, and admin files
-- existing schema or migration convention
-- secret-free local config example
+- existing PHP application under `public_html/` (present)
+- existing config, DB, auth, CSRF, admission, and admin files (present)
+- existing schema or migration convention (present)
+- secret-free local config example (present)
 - a safe local test database or test double strategy
 
-The current workspace has only planning documents, so implementing Prompt 1 now would require inventing the application structure and would risk diverging from the real system.
+The PHP application has been copied from the local `findpilates.jp` workspace. Prompt 1 can now start with code review and implementation, but DB-backed behavior will still need either a safe local test database or focused repository/unit tests that do not depend on production credentials.
+
+## Existing App Import
+
+Imported into this repository:
+
+- `public_html/`
+- `database/migrations/`
+- `schema.sql`
+- existing docs and tests
+- `xserver_php/php.ini`
+
+Intentionally not imported:
+
+- `config/findpilates.php`
+- `admin_seed.sql`
+- `backups/`
+- production logs, mail data, htpasswd data
+- `public_html/data/`
+- `public_html/admission/tmp/`
+- zip archives
+
+Validation after import:
+
+- `powershell -ExecutionPolicy Bypass -File .\scripts\run-checks.ps1`: passed
+- `php .\tests\trial_schedule_unit.php`: passed

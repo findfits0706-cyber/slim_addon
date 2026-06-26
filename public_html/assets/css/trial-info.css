@@ -1,0 +1,148 @@
+.women-only-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 720px;
+  margin: 18px auto 0;
+  padding: 10px 16px;
+  border: 1px solid rgba(154, 123, 97, .22);
+  border-radius: 999px;
+  background: #faf6f1;
+  color: #443d39;
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.women-only-note__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #efe6dc;
+  color: #7d604d;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.women-only-note__text {
+  margin: 0;
+  color: #5c514b;
+}
+
+.trial-thanks-card {
+  text-align: center;
+}
+
+.trial-booking-summary {
+  max-width: 720px;
+  margin: 26px auto 0;
+  text-align: left;
+}
+
+.trial-day-guide {
+  max-width: 860px;
+  margin: 26px auto 0;
+  padding: 24px;
+  border: 1px solid rgba(154, 123, 97, .22);
+  border-radius: 22px;
+  background: #fff;
+  text-align: left;
+}
+
+.trial-day-guide__title {
+  margin: 0 0 18px;
+  color: #2f2a28;
+  font-size: 22px;
+  line-height: 1.45;
+  letter-spacing: .04em;
+}
+
+.trial-day-guide__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.trial-day-guide__block {
+  padding: 18px;
+  border-radius: 18px;
+  background: #faf8f5;
+}
+
+.trial-day-guide__block--wide {
+  grid-column: 1 / -1;
+}
+
+.trial-day-guide__heading {
+  margin: 0 0 10px;
+  color: #7d604d;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.trial-day-guide__text {
+  margin: 0;
+  color: #443d39;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.trial-day-guide__text + .trial-day-guide__text {
+  margin-top: 10px;
+}
+
+.trial-day-guide__list {
+  margin: 8px 0 12px 1.3em;
+  padding: 0;
+  color: #443d39;
+  font-size: 14px;
+  line-height: 1.9;
+  text-align: left;
+}
+
+.trial-day-guide__emphasis {
+  color: #2f2a28;
+  font-weight: 700;
+}
+
+.medical-check-item {
+  display: block;
+}
+
+.medical-check-item .form-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.7;
+}
+
+.medical-check-item .medical-check-input {
+  flex: 0 0 auto;
+  margin: 3px 0 0;
+}
+
+@media (max-width: 720px) {
+  .women-only-note {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: 18px;
+  }
+
+  .trial-day-guide {
+    padding: 20px 16px;
+  }
+
+  .trial-day-guide__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medical-check-item {
+    padding: 14px;
+  }
+}

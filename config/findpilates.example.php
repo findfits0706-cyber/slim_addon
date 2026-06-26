@@ -3,33 +3,25 @@
 declare(strict_types=1);
 
 /*
- * Secret-free configuration example for Find Pilates x SLIM integration.
- * Copy to the environment-specific private config path used by the existing app.
- * Do not commit real credentials, tokens, hashes, or production paths.
+ * Secret-free configuration example for the existing Find Pilates PHP app
+ * and the planned SLIM integration.
+ *
+ * Copy to config/findpilates.php on the target environment and fill real
+ * values outside Git. Do not commit credentials, tokens, hashes, or
+ * production-only paths.
  */
 
 return [
-    'app' => [
-        'base_url' => 'https://example.com',
-        'environment' => 'local',
-        'debug' => false,
-    ],
+    // Existing application keys read by public_html/app/config.php.
+    'db_host' => 'mysql.example.ne.jp',
+    'db_name' => 'database_name',
+    'db_user' => 'database_user',
+    'db_pass' => 'change-me-outside-git',
+    'admin_email' => 'staff@example.com',
+    'from_email' => 'info@example.com',
+    'from_name' => 'Find Pilates',
 
-    'db' => [
-        'host' => 'localhost',
-        'port' => 3306,
-        'database' => 'findpilates_local',
-        'username' => 'findpilates_user',
-        'password' => 'change-me-outside-git',
-        'charset' => 'utf8mb4',
-    ],
-
-    'mail' => [
-        'from_address' => 'noreply@example.com',
-        'from_name' => 'Find Pilates',
-        'admin_to' => 'staff@example.com',
-    ],
-
+    // Planned admission and extension integration keys.
     'admission' => [
         'photo_storage_dir' => __DIR__ . '/../storage/admission_photos',
         'max_photo_bytes' => 5 * 1024 * 1024,
@@ -56,12 +48,5 @@ return [
     'slim' => [
         'login_url' => 'https://www.slim-sng.jp/slim/web/m/sng/login/',
         'profile_version' => 'unverified-0',
-    ],
-
-    'security' => [
-        'cookie_secure' => true,
-        'cookie_httponly' => true,
-        'cookie_samesite' => 'Lax',
-        'csrf_token_bytes' => 32,
     ],
 ];

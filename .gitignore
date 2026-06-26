@@ -20,11 +20,13 @@ logs/
 *.dump
 *.bak
 *.backup
+*.zip
 maildata/
 private/
 storage/private/
 storage/admission_photos/
 public_html/admission/tmp/
+public_html/data/
 
 # Generated or sensitive fixtures
 fixtures/private/

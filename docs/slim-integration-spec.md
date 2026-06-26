@@ -18,21 +18,26 @@ The core safety goals are:
 
 Prompt 0 was run in `C:\Users\user\Desktop\MyProject\SLIM_Addon`.
 
-Observed files:
+Initial observed files:
 
 - `FindPilates_SLIM_最終設計.md`
 - `FindPilates_Codex_実装プロンプト集.md`
 
-Not present yet:
+Imported after repository initialization:
 
-- `.git`
 - `public_html/`
-- existing PHP application files
-- MySQL schema or migrations
-- saved SLIM HTML fixtures
-- existing `config/findpilates.example.php`
+- `database/migrations/`
+- `schema.sql`
+- existing project docs and tests
+- `xserver_php/php.ini`
+- secret-free `config/findpilates.example.php`
 
-Because the live PHP repository and saved SLIM HTML are not present, this document records confirmed product rules and marks implementation details that require real files as unresolved.
+Still not present:
+
+- saved SLIM HTML fixtures
+- local test database credentials or a DB test double
+
+Because saved SLIM HTML is not present, this document records confirmed product rules and marks SLIM field details that require real screen files as unresolved.
 
 ## System Architecture
 
@@ -306,12 +311,10 @@ Default future flags:
 
 ## Next Required Inputs
 
-To continue beyond Prompt 0, add the real clean PHP repository and non-sensitive fixtures:
+To continue beyond Prompt 1 preparation, add the remaining non-sensitive fixtures:
 
-- current `public_html/` application
-- schema-only SQL or existing migration files
 - saved SLIM HTML for the four target pages
-- secret-free config examples
 - anonymous test application data
+- a safe local test database or a documented DB test strategy
 
 Do not add production DB dumps, real customer photos, SLIM credentials, mail credentials, or production logs.

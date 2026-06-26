@@ -1,0 +1,149 @@
+body {
+  background: #f8f5f1;
+  color: #443d39;
+}
+
+.trial-title {
+  color: #2f2a28;
+  font-size: 36px;
+  font-size: clamp(28px, 4.4vw, 44px);
+}
+
+.section-title {
+  color: #2f2a28;
+  font-size: 28px;
+  font-size: clamp(22px, 3vw, 30px);
+}
+
+.section-title-small {
+  font-size: 22px;
+  font-size: clamp(18px, 2.4vw, 24px);
+}
+
+.trial-card,
+.calendar-month,
+.menu-card,
+.slot-card,
+.form-input,
+.form-select,
+.form-textarea {
+  background: #fff;
+  border-color: rgba(47, 42, 40, .14);
+}
+
+.trial-logo,
+.section-label,
+.menu-badge,
+.slot-status,
+.selected-summary-label {
+  color: #9a7b61;
+}
+
+.calendar-month-title,
+.calendar-date-day,
+.menu-title,
+.slot-date,
+.form-label,
+.slider-button-secondary {
+  color: #2f2a28;
+}
+
+.trial-lead,
+.section-text,
+.calendar-weekdays span,
+.slot-meta,
+.selected-summary-sub,
+.step-summary-text {
+  color: #766e68;
+}
+
+.slider-button-primary {
+  background: #2f2a28;
+  color: #fff;
+}
+
+.required {
+  background: #2f2a28;
+  color: #fff;
+}
+
+.menu-badge,
+.slot-status {
+  background: #efe6dc;
+}
+
+@media (max-width: 520px) {
+  .calendar-weekdays,
+  .calendar-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-right: -2px;
+    margin-left: -2px;
+  }
+
+  .calendar-weekdays span,
+  .calendar-grid > * {
+    flex: 0 0 calc(14.285714% - 4px);
+    width: calc(14.285714% - 4px);
+    margin: 2px;
+  }
+
+  .calendar-cell,
+  .calendar-date {
+    aspect-ratio: auto;
+    height: 40px;
+    min-height: 0;
+    border-radius: 12px;
+  }
+
+  .calendar-cell-inactive {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .date-card {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .trial-page {
+    padding: 18px 10px 56px;
+  }
+
+  .trial-card {
+    padding: 22px 12px;
+  }
+
+  .calendar-month {
+    padding: 10px;
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    margin-right: -1.5px;
+    margin-left: -1.5px;
+  }
+
+  .calendar-weekdays span,
+  .calendar-grid > * {
+    flex-basis: calc(14.285714% - 3px);
+    width: calc(14.285714% - 3px);
+    margin: 1.5px;
+  }
+
+  .calendar-cell,
+  .calendar-date {
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .calendar-date-day {
+    font-size: 16px;
+  }
+}

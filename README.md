@@ -4,15 +4,16 @@ Find Pilates admission form, admin workflow, Edge extension, and SLIM SNG assist
 
 ## Current Status
 
-This repository currently contains the Prompt 0 foundation:
+This repository currently contains the Prompt 0 foundation plus the existing
+Find Pilates PHP application copied from the local `findpilates.jp` workspace.
 
 - integration specification
 - progress checklist
 - SLIM field inventory placeholder
 - secret-free configuration example
 - local check script
-
-The existing PHP application, schema/migrations, and saved SLIM HTML fixtures have not been added yet.
+- existing PHP application under `public_html/`
+- existing schema and migration files
 
 ## Key Documents
 
@@ -29,3 +30,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-checks.ps1
 ```
 
 If PHP execution is restricted by the environment, run the same command where `php.exe` is allowed.
+
+Existing unit test:
+
+```powershell
+php .\tests\trial_schedule_unit.php
+```
+
+## Private Data
+
+Do not commit `config/findpilates.php`, runtime session/data files, backups,
+logs, mail data, admin seed SQL, customer data, or production DB dumps.
