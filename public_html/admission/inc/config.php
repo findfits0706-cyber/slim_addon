@@ -5,7 +5,7 @@ return [
     'site' => [
         'name' => 'Find Pilates',
         'club_name' => 'ファインドスポーツクラブ',
-        'company_name' => '鈴木ヘルスセンター株式会社',
+        'company_name' => '那須ヘルスセンター株式会社',
         'postal_code' => '329-2754',
         'address' => '栃木県那須塩原市西大和1-8 そすいスクエアAQUAS 2F',
         'tel' => '0287-36-0419',
