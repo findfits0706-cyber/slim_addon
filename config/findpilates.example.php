@@ -44,7 +44,7 @@ return [
         'allowed_origins' => [
             'chrome-extension://replace-with-edge-extension-id',
         ],
-        'transfer_enabled' => false,
+        'transfer_enabled' => true,
         'dry_run_default' => true,
         'auto_navigation' => false,
         'auto_submit' => false,
