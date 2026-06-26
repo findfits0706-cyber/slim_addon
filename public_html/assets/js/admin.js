@@ -185,6 +185,7 @@
 
   const admissionSearch = document.querySelector('[data-admission-search]');
   const admissionStatusFilter = document.querySelector('[data-admission-status-filter]');
+  const admissionSlimStatusFilter = document.querySelector('[data-admission-slim-status-filter]');
   const admissionItems = Array.from(document.querySelectorAll('[data-admission-item]'));
   const admissionEmpty = document.querySelector('[data-admission-empty]');
   const admissionVisibleCounts = Array.from(document.querySelectorAll('[data-admission-visible-count]'));
@@ -195,12 +196,16 @@
 
     const query = normalizeSearch(admissionSearch?.value || '');
     const status = admissionStatusFilter?.value || '';
+    const slimStatus = admissionSlimStatusFilter?.value || '';
     let visibleCount = 0;
 
     admissionItems.forEach((item) => {
       const text = normalizeSearch(item.getAttribute('data-search') || '');
       const itemStatus = item.getAttribute('data-status') || '';
-      const visible = (query === '' || text.includes(query)) && (status === '' || itemStatus === status);
+      const itemSlimStatus = item.getAttribute('data-slim-status') || '';
+      const visible = (query === '' || text.includes(query))
+        && (status === '' || itemStatus === status)
+        && (slimStatus === '' || itemSlimStatus === slimStatus);
       item.hidden = !visible;
       if (visible) visibleCount += 1;
     });
@@ -215,6 +220,7 @@
 
   admissionSearch?.addEventListener('input', updateAdmissionList);
   admissionStatusFilter?.addEventListener('change', updateAdmissionList);
+  admissionSlimStatusFilter?.addEventListener('change', updateAdmissionList);
   updateAdmissionList();
 
   const detailTarget = document.getElementById('admissionDetail');

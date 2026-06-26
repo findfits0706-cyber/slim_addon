@@ -167,6 +167,8 @@ function collect_form_data(array $post): array
         'addon' => trim((string)($post['addon'] ?? '')),
         'initial_visits' => trim((string)($post['initial_visits'] ?? '')),
         'start_date' => trim((string)($post['start_date'] ?? '')),
+        'actual_procedure_date' => trim((string)($post['actual_procedure_date'] ?? '')),
+        'slim_member_number' => trim((string)($post['slim_member_number'] ?? '')),
         'campaign_code' => trim((string)($post['campaign_code'] ?? '')),
         'procedure_date_1' => trim((string)($post['procedure_date_1'] ?? '')),
         'procedure_time_1' => trim((string)($post['procedure_time_1'] ?? '')),
@@ -1503,6 +1505,7 @@ function build_admission_record(array $config, array $data, array $fees, array $
     return [
         'id' => (string)($overrides['id'] ?? ('adm_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)))),
         'status' => (string)($overrides['status'] ?? 'new'),
+        'slim_status' => (string)($overrides['slim_status'] ?? 'not_started'),
         'created_at' => (string)($overrides['created_at'] ?? date('Y-m-d H:i:s', $createdAtTs)),
         'created_at_ts' => $createdAtTs,
         'updated_at' => date('Y-m-d H:i:s', $nowTs),
@@ -1511,6 +1514,9 @@ function build_admission_record(array $config, array $data, array $fees, array $
         'mail_status' => $overrides['mail_status'] ?? [],
         'photo' => $photo,
         'data' => $data,
+        'original_data' => $overrides['original_data'] ?? null,
+        'normalized' => $overrides['normalized'] ?? admission_normalized_payload($data),
+        'actor_admin_id' => $overrides['actor_admin_id'] ?? null,
         'fees' => $fees,
     ];
 }
@@ -1526,6 +1532,8 @@ function admission_blank_data(): array
         'addon' => 'basic',
         'initial_visits' => '',
         'start_date' => '',
+        'actual_procedure_date' => '',
+        'slim_member_number' => '',
         'campaign_code' => '',
         'procedure_date_1' => '',
         'procedure_time_1' => '',
@@ -1585,6 +1593,11 @@ function validate_admin_record(array $config, array $data): array
     }
     $errors = validate_form($config, $data, true);
     unset($errors['csrf'], $errors['terms_agree'], $errors['photo']);
+    if (($data['actual_procedure_date'] ?? '') === '') {
+        $errors['actual_procedure_date'] = 'SLIM登録に使う実手続日を設定してください。';
+    } elseif (!is_valid_date_string((string)$data['actual_procedure_date'])) {
+        $errors['actual_procedure_date'] = '実手続日の形式を確認してください。';
+    }
     return array_values($errors);
 }
 
@@ -1631,14 +1644,16 @@ function datetime_label(?string $datetime): string
 
 function build_slim_copy_text(array $config, array $record): string
 {
-    $data = $record['data'] ?? [];
+    $data = is_array($record['normalized'] ?? null) ? $record['normalized'] : ($record['data'] ?? []);
     $fees = $record['fees'] ?? [];
     $age = calculate_age($data['birth'] ?? '');
+    $operations = is_array($record['operations'] ?? null) ? $record['operations'] : build_slim_operations($data);
     $lines = [];
     $lines[] = '【SLIM転記用】';
     $lines[] = '受付ID：' . ($record['id'] ?? '');
     $lines[] = '受付日時：' . datetime_label($record['created_at'] ?? '');
     $lines[] = 'ステータス：' . (($config['admin']['status_options'][$record['status'] ?? ''] ?? ($record['status'] ?? '')));
+    $lines[] = 'SLIMステータス：' . (string)($record['slim_status'] ?? '');
     $lines[] = '';
     $lines[] = '会員氏名：' . ($data['name'] ?? '');
     $lines[] = 'フリガナ：' . ($data['kana'] ?? '');
@@ -1674,12 +1689,20 @@ function build_slim_copy_text(array $config, array $record): string
         $lines[] = '翌月会費：' . yen((int)$fees['next_month_fee']);
     }
     $lines[] = '初回概算合計：' . yen((int)($fees['initial_total'] ?? 0));
+    $lines[] = '実手続日：' . date_label($data['actual_procedure_date'] ?? '');
     $lines[] = '利用開始希望日：' . date_label($data['start_date'] ?? '');
+    $lines[] = '';
+    $lines[] = '【SLIM操作キュー】';
+    foreach ($operations as $operation) {
+        $lines[] = (string)($operation['sequence_no'] ?? '') . '. '
+            . (string)($operation['page_type'] ?? '') . ' / '
+            . (string)($operation['course_code'] ?? '') . ' / '
+            . (string)($operation['course_id'] ?? '') . ' / '
+            . (string)($operation['status'] ?? '');
+    }
     for ($i = 1; $i <= 3; $i++) {
         $lines[] = '第' . $i . '希望：' . date_label($data['procedure_date_' . $i] ?? '') . ' ' . time_slot_label($config, (string)($data['procedure_time_' . $i] ?? ''));
     }
-    $lines[] = '健康補足：' . (string)($data['medical_memo'] ?? '');
-    $lines[] = '受付メモ：' . (string)($record['admin_note'] ?? '');
 
     return implode("\n", $lines);
 }

@@ -14,6 +14,7 @@ $adminCampaignsUrl = base_path('/admin/campaigns.php');
 $admissionFormUrl = base_path('/admission/');
 
 $statusOptions = $config['admin']['status_options'] ?? [];
+$slimStatusOptions = $config['admin']['slim_status_options'] ?? [];
 $token = csrf_token();
 $errors = [];
 
@@ -28,12 +29,17 @@ if (!$isNewMode && $selectedRecord === null && !empty($records)) {
     $selectedId = (string)($selectedRecord['id'] ?? '');
 }
 
-$formData = $selectedRecord['data'] ?? admission_blank_data();
+$originalData = is_array($selectedRecord['data'] ?? null) ? $selectedRecord['data'] : admission_blank_data();
+$formData = is_array($selectedRecord['normalized'] ?? null) ? array_merge(admission_blank_data(), $originalData, $selectedRecord['normalized']) : $originalData;
 $formStatus = (string)($selectedRecord['status'] ?? 'new');
+$formSlimStatus = (string)($selectedRecord['slim_status'] ?? 'not_started');
 $formAdminNote = (string)($selectedRecord['admin_note'] ?? '');
 $formPhoto = $selectedRecord['photo'] ?? [];
 $formCreatedAt = (string)($selectedRecord['created_at'] ?? '');
 $formFees = $selectedRecord['fees'] ?? calculate_fees($config, $formData);
+$formOperations = is_array($selectedRecord['operations'] ?? null) ? $selectedRecord['operations'] : slim_operations_with_readiness($formData, is_array($formPhoto) ? $formPhoto : []);
+$formProgress = slim_operation_progress($formOperations);
+$formReadiness = validate_slim_readiness($formData, $formOperations, is_array($formPhoto) ? $formPhoto : []);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && post_string('admin_action') === 'save') {
     if (!verify_csrf_token(post_string('csrf_token'))) {
@@ -50,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && post_string('admin_action') === 'sa
     $formAdminNote = post_string('admin_note');
     $formPhoto = $existingRecord['photo'] ?? [];
     $formCreatedAt = (string)($existingRecord['created_at'] ?? '');
+    $originalData = is_array($existingRecord['data'] ?? null) ? $existingRecord['data'] : $formData;
 
     if (!isset($statusOptions[$formStatus])) {
         $formStatus = 'new';
@@ -57,12 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && post_string('admin_action') === 'sa
 
     $errors = validate_admin_record($config, $formData);
     $formFees = calculate_fees($config, $formData);
+    $formOperations = slim_operations_with_readiness($formData, is_array($formPhoto) ? $formPhoto : []);
+    $formProgress = slim_operation_progress($formOperations);
+    $formReadiness = validate_slim_readiness($formData, $formOperations, is_array($formPhoto) ? $formPhoto : []);
 
     if (empty($errors)) {
+        $adminUser = function_exists('admin_user') ? admin_user() : null;
         $overrides = [
             'status' => $formStatus,
+            'slim_status' => slim_status_from_operations($formData, $formOperations),
             'admin_note' => $formAdminNote,
             'mail_status' => $existingRecord['mail_status'] ?? [],
+            'original_data' => $originalData,
+            'normalized' => admission_normalized_payload($formData),
+            'actor_admin_id' => is_array($adminUser) ? (int)($adminUser['id'] ?? 0) : null,
         ];
 
         if ($recordId !== '') {
@@ -98,12 +113,20 @@ $previewRecord = build_admission_record(
     [
         'id' => $selectedRecord['id'] ?? '',
         'status' => $formStatus,
+        'slim_status' => $formSlimStatus,
         'created_at' => $formCreatedAt !== '' ? $formCreatedAt : date('Y-m-d H:i:s'),
         'created_at_ts' => $selectedRecord['created_at_ts'] ?? time(),
         'admin_note' => $formAdminNote,
         'mail_status' => $selectedRecord['mail_status'] ?? [],
+        'original_data' => $originalData,
+        'normalized' => admission_normalized_payload($formData),
     ]
 );
+$previewRecord['operations'] = $formOperations;
+$previewRecord['operation_progress'] = $formProgress;
+$previewRecord['readiness'] = $formReadiness;
+$formSlimStatus = slim_status_from_operations($formData, $formOperations);
+$previewRecord['slim_status'] = $formSlimStatus;
 
 $recordCount = count($records);
 $isErrorOpen = !empty($errors);
@@ -130,6 +153,44 @@ if (($formData['use_type'] ?? 'new') === 'add') {
 }
 $initialVisitOptions = initial_visit_options($config, $monthlyVisitsForInitial);
 $selectedInitialVisits = (string)($formData['initial_visits'] ?: max($initialVisitOptions));
+
+function admission_readiness_label(string $code): string
+{
+    $labels = [
+        'surname_missing' => '姓が未入力です',
+        'given_name_missing' => '名が未入力です',
+        'surname_kana_missing' => 'セイが未入力です',
+        'given_name_kana_missing' => 'メイが未入力です',
+        'birth_missing' => '生年月日が未入力です',
+        'gender_missing' => '性別が未入力です',
+        'phone_missing' => '電話番号が未入力です',
+        'phone_type_missing' => '電話番号種別が未入力です',
+        'start_date_missing' => '利用開始日が未入力です',
+        'actual_procedure_date_missing' => '実手続日が未入力です',
+        'legacy_weekend_plan' => '旧ウィークエンドプランは自動転記できません',
+        'operations_missing' => '有効なSLIM操作キューがありません',
+        'main_member_number_missing' => '既存本館会員番号が未入力です',
+        'slim_member_number_missing' => '後続の追加届に使うSLIM会員番号が未入力です',
+        'photo_missing' => '顔写真が未登録です',
+    ];
+
+    return $labels[$code] ?? $code;
+}
+
+function admission_operation_status_label(string $status): string
+{
+    $labels = [
+        'pending' => '待機',
+        'ready' => '準備OK',
+        'blocked' => '準備不足',
+        'needs_review' => '要確認',
+        'in_progress' => '登録中',
+        'filled' => '転記済み',
+        'completed' => '登録済み',
+    ];
+
+    return $labels[$status] ?? $status;
+}
 
 render_admin_header('入会受付', 'admissions-admin-page');
 ?>
@@ -178,6 +239,13 @@ render_admin_header('入会受付', 'admissions-admin-page');
           <option value="<?= h((string)$statusKey) ?>"><?= h((string)$statusLabel) ?></option>
         <?php endforeach; ?>
       </select>
+      <label for="admissionSlimStatusFilter">SLIMステータス</label>
+      <select id="admissionSlimStatusFilter" data-admission-slim-status-filter>
+        <option value="">すべて</option>
+        <?php foreach ($slimStatusOptions as $statusKey => $statusLabel): ?>
+          <option value="<?= h((string)$statusKey) ?>"><?= h((string)$statusLabel) ?></option>
+        <?php endforeach; ?>
+      </select>
     </div>
 
     <div class="admissions-admin-list" data-admission-list>
@@ -190,6 +258,8 @@ render_admin_header('入会受付', 'admissions-admin-page');
           $recordFees = is_array($record['fees'] ?? null) ? $record['fees'] : [];
           $recordId = (string)($record['id'] ?? '');
           $status = (string)($record['status'] ?? 'new');
+          $slimStatus = (string)($record['slim_status'] ?? 'not_started');
+          $progress = is_array($record['operation_progress'] ?? null) ? $record['operation_progress'] : slim_operation_progress(is_array($record['operations'] ?? null) ? $record['operations'] : []);
           $isActive = $recordId === (string)($previewRecord['id'] ?? '') && !$isNewMode;
           $searchText = trim(implode(' ', [
               $recordData['name'] ?? '',
@@ -202,6 +272,7 @@ render_admin_header('入会受付', 'admissions-admin-page');
             href="<?= h($adminSelfUrl) ?>?id=<?= h(rawurlencode($recordId)) ?>"
             data-admission-item
             data-status="<?= h($status) ?>"
+            data-slim-status="<?= h($slimStatus) ?>"
             data-search="<?= h($searchText) ?>"
             <?= $isActive ? 'aria-current="page"' : '' ?>
           >
@@ -211,6 +282,7 @@ render_admin_header('入会受付', 'admissions-admin-page');
             </span>
             <span>受付日時：<?= h(datetime_label($record['created_at'] ?? '')) ?></span>
             <span>希望内容：<?= h((string)($recordFees['course_label'] ?? '未設定')) ?></span>
+            <span>SLIM：<?= h((string)($slimStatusOptions[$slimStatus] ?? $slimStatus)) ?> / <?= h((string)($progress['completed'] ?? 0)) ?><?= '/' ?><?= h((string)($progress['total'] ?? 0)) ?></span>
             <span>利用開始：<?= h(date_label($recordData['start_date'] ?? '')) ?></span>
           </a>
         <?php endforeach; ?>
@@ -244,6 +316,91 @@ render_admin_header('入会受付', 'admissions-admin-page');
       </details>
 
       <details class="admin-card admissions-admin-section" open>
+        <summary>SLIM登録準備</summary>
+        <div class="admissions-admin-grid">
+          <div>
+            <label for="actualProcedureDate">実手続日</label>
+            <input id="actualProcedureDate" name="actual_procedure_date" type="date" value="<?= h($formData['actual_procedure_date'] ?? '') ?>" required>
+          </div>
+          <div>
+            <label for="slimMemberNumber">SLIM会員番号</label>
+            <input id="slimMemberNumber" name="slim_member_number" value="<?= h($formData['slim_member_number'] ?? '') ?>">
+          </div>
+          <div>
+            <label>SLIMステータス</label>
+            <div class="admissions-admin-status-card">
+              <strong><?= h((string)($slimStatusOptions[$formSlimStatus] ?? $formSlimStatus)) ?></strong>
+              <span><?= h((string)($formProgress['completed'] ?? 0)) ?> / <?= h((string)($formProgress['total'] ?? 0)) ?> operations completed</span>
+            </div>
+          </div>
+          <div>
+            <label>未完了件数</label>
+            <div class="admissions-admin-status-card">
+              <strong><?= h((string)($formProgress['incomplete'] ?? 0)) ?></strong>
+              <span>ready: <?= h((string)($formProgress['ready'] ?? 0)) ?> / blocked: <?= h((string)($formProgress['blocked'] ?? 0)) ?></span>
+            </div>
+          </div>
+        </div>
+
+        <?php if (!empty($formReadiness['errors']) || !empty($formReadiness['warnings'])): ?>
+          <div class="admissions-admin-readiness">
+            <?php if (!empty($formReadiness['errors'])): ?>
+              <div class="admissions-admin-readiness-box is-error">
+                <strong>開始前に確認が必要</strong>
+                <ul>
+                  <?php foreach ($formReadiness['errors'] as $code): ?>
+                    <li><?= h(admission_readiness_label((string)$code)) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+            <?php if (!empty($formReadiness['warnings'])): ?>
+              <div class="admissions-admin-readiness-box is-warning">
+                <strong>警告</strong>
+                <ul>
+                  <?php foreach ($formReadiness['warnings'] as $code): ?>
+                    <li><?= h(admission_readiness_label((string)$code)) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <div class="admissions-admin-operation-list">
+          <?php if (empty($formOperations)): ?>
+            <p class="admin-note">この申込から自動生成できるSLIM操作はありません。旧プランまたは未対応の組み合わせを確認してください。</p>
+          <?php else: ?>
+            <?php foreach ($formOperations as $operation): ?>
+              <?php $opErrors = is_array($operation['readiness_errors'] ?? null) ? $operation['readiness_errors'] : []; ?>
+              <article class="admissions-admin-operation-card is-<?= h((string)($operation['status'] ?? 'pending')) ?>">
+                <div class="admissions-admin-operation-head">
+                  <strong><?= h((string)($operation['sequence_no'] ?? '')) ?>. <?= h((string)($operation['business_label'] ?? '')) ?></strong>
+                  <span><?= h(admission_operation_status_label((string)($operation['status'] ?? 'pending'))) ?></span>
+                </div>
+                <dl>
+                  <div><dt>page</dt><dd><?= h((string)($operation['page_type'] ?? '')) ?></dd></div>
+                  <div><dt>course</dt><dd><?= h((string)($operation['course_code'] ?? '')) ?> / <?= h((string)($operation['course_id'] ?? '')) ?></dd></div>
+                  <div><dt>application_date</dt><dd><?= h(date_label($operation['application_date'] ?? '')) ?></dd></div>
+                  <div><dt>start_date</dt><dd><?= h(date_label($operation['start_date'] ?? '')) ?></dd></div>
+                  <?php if (!empty($operation['reason_id'])): ?>
+                    <div><dt>reason</dt><dd><?= h((string)$operation['reason_id']) ?> / <?= h((string)($operation['reason_label'] ?? '')) ?></dd></div>
+                  <?php endif; ?>
+                </dl>
+                <?php if (!empty($opErrors)): ?>
+                  <ul class="admissions-admin-operation-errors">
+                    <?php foreach ($opErrors as $code): ?>
+                      <li><?= h(admission_readiness_label((string)$code)) ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </article>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </details>
+
+      <details class="admin-card admissions-admin-section" open>
         <summary>SLIM転記用</summary>
         <div class="admissions-admin-copy-head">
           <button class="button-link button-link--muted" type="button" data-copy-target="slimCopyText">コピー</button>
@@ -251,6 +408,41 @@ render_admin_header('入会受付', 'admissions-admin-page');
           <span class="admissions-admin-copy-status" data-copy-status role="status"></span>
         </div>
         <textarea id="slimCopyText" class="admissions-admin-copy-box" readonly data-slim-copy-box><?= h(build_slim_copy_text($config, $previewRecord)) ?></textarea>
+      </details>
+
+      <details class="admin-card admissions-admin-section">
+        <summary>申込原本と転記値</summary>
+        <div class="admissions-admin-compare-table">
+          <div class="admissions-admin-compare-head">
+            <span>項目</span>
+            <span>申込原本</span>
+            <span>SLIM転記値</span>
+          </div>
+          <?php foreach ([
+              'name' => '氏名',
+              'kana' => 'フリガナ',
+              'birth' => '生年月日',
+              'gender' => '性別',
+              'phone_type' => '電話種別',
+              'phone' => '電話番号',
+              'postal_code' => '郵便番号',
+              'city_area' => '住所1',
+              'street_address' => '住所2',
+              'building' => '住所3',
+              'start_date' => '利用開始日',
+          ] as $field => $label): ?>
+            <?php
+            $originalValue = (string)($originalData[$field] ?? '');
+            $transferValue = (string)($formData[$field] ?? '');
+            $different = $originalValue !== $transferValue;
+            ?>
+            <div class="<?= $different ? 'is-different' : '' ?>">
+              <span><?= h($label) ?></span>
+              <span><?= h($originalValue) ?></span>
+              <span><?= h($transferValue) ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
       </details>
 
       <details class="admin-card admissions-admin-section" open>

@@ -65,7 +65,8 @@ foreach ($file in $phpFiles) {
 
 $unitTests = @(
     'tests/trial_schedule_unit.php',
-    'tests/admission_fee_unit.php'
+    'tests/admission_fee_unit.php',
+    'tests/slim_operations_unit.php'
 )
 
 Write-Host 'Running PHP unit smoke tests...'

@@ -4,7 +4,7 @@ Find Pilates admission form, admin workflow, Edge extension, and SLIM SNG assist
 
 ## Current Status
 
-This repository currently contains the Prompt 1 public admission form and MySQL persistence foundation plus the existing Find Pilates PHP application copied from the local `findpilates.jp` workspace.
+This repository currently contains the Prompt 2 admin workflow and SLIM operation queue foundation plus the existing Find Pilates PHP application copied from the local `findpilates.jp` workspace.
 
 - integration specification
 - progress checklist
@@ -14,7 +14,10 @@ This repository currently contains the Prompt 1 public admission form and MySQL 
 - existing PHP application under `public_html/`
 - existing schema and migration files
 - admission MySQL repository and migration
+- SLIM operation queue repository and migration
+- admin readiness/progress UI
 - server-side admission fee tests
+- SLIM operation generation tests
 - dry-run legacy admission JSON import command
 
 ## Key Documents
@@ -25,12 +28,13 @@ This repository currently contains the Prompt 1 public admission form and MySQL 
 - `FindPilates_SLIM_最終設計.md`
 - `FindPilates_Codex_実装プロンプト集.md`
 
-## Prompt 1 Migration
+## Migrations
 
-Apply this migration before using the admission form in a DB-backed environment:
+Apply these migrations in order before using the admission and SLIM preparation workflow in a DB-backed environment:
 
 ```powershell
 database/migrations/20260626_admissions_mysql.sql
+database/migrations/20260626_admission_slim_operations.sql
 ```
 
 Legacy admission JSON can be checked without writing:
@@ -54,6 +58,7 @@ Individual checks:
 ```powershell
 php .\tests\trial_schedule_unit.php
 php .\tests\admission_fee_unit.php
+php .\tests\slim_operations_unit.php
 php .\scripts\import-admissions-json.php --source=.\tests\fixtures\admission_legacy_sample.json
 ```
 

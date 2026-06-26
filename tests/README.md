@@ -18,6 +18,7 @@ The check currently:
 - syntax-checks tracked PHP files when PHP is available
 - runs `tests/trial_schedule_unit.php`
 - runs `tests/admission_fee_unit.php`
+- runs `tests/slim_operations_unit.php`
 - runs the legacy admission JSON import command in dry-run mode with `tests/fixtures/admission_legacy_sample.json`
 
 Individual checks:
@@ -25,7 +26,8 @@ Individual checks:
 ```powershell
 php .\tests\trial_schedule_unit.php
 php .\tests\admission_fee_unit.php
+php .\tests\slim_operations_unit.php
 php .\scripts\import-admissions-json.php --source=.\tests\fixtures\admission_legacy_sample.json
 ```
 
-DB-backed admission save/list behavior is not covered here until a safe local or staging MySQL database is provided.
+DB-backed admission save/list and SLIM operation persistence behavior are not covered here until a safe local or staging MySQL database is provided.

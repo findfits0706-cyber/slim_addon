@@ -29,7 +29,15 @@ return [
             'new' => '未対応',
             'contacting' => '連絡中',
             'scheduled' => '手続き予約済み',
-            'registered' => 'SLIM登録済み',
+            'visited' => '来店済み',
+            'cancelled' => 'キャンセル',
+        ],
+        'slim_status_options' => [
+            'not_started' => '未着手',
+            'preparing' => '準備中',
+            'in_progress' => '登録中',
+            'needs_review' => '要確認',
+            'completed' => '登録済み',
         ],
     ],
 

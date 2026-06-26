@@ -1,6 +1,6 @@
 # Find Pilates x SLIM SNG Integration Spec
 
-Status: Prompt 1 public form and MySQL persistence foundation. This document is the working source of truth until saved SLIM HTML and a safe DB-backed test environment are added.
+Status: Prompt 2 admin workflow and SLIM operation queue foundation. This document is the working source of truth until saved SLIM HTML and a safe DB-backed test environment are added.
 
 ## Purpose
 
@@ -103,6 +103,12 @@ Weekend membership is removed from new public applications. Legacy records conta
 
 Operations are generated per application as an ordered queue. Do not implement a fixed global four-step workflow.
 
+Admin application status and SLIM status are separate. The application status tracks staff handling of the inquiry or visit flow. The SLIM status tracks readiness and operation progress: `not_started`, `preparing`, `in_progress`, `needs_review`, or `completed`.
+
+Original submitted data and normalized transfer data are separate. Staff can review the original payload and edit the normalized values used for SLIM copy/transfer. Health information is never part of the normalized SLIM transfer payload.
+
+Every generated operation carries its page type, course ID/code, exact candidate option text, application date, start date, payment cycle, readiness errors, and status. The required SLIM application date is the admin-confirmed actual procedure date. First, second, and third preferred dates remain only visit candidates.
+
 ### Find Pilates Standalone
 
 | Application plan | Operations |
@@ -180,6 +186,7 @@ Minimum tables planned:
 - `admission_photos`
 - `admission_slim_operations`
 - `admission_slim_events`
+- `admission_locks`
 - `extension_pairing_codes`
 - `extension_access_tokens`
 
@@ -188,6 +195,8 @@ Sensitive health information stays in `admission_sensitive` and is not returned 
 Photos are stored outside the public web root or in a non-directly-served protected area. Public URLs must not expose physical paths. Photo access for the extension uses short-lived signed or authenticated URLs.
 
 Do not log full personal information values in application logs, extension logs, or SLIM operation event rows.
+
+Operation regeneration is conservative. Not-started operations may be regenerated from the current normalized admission data. Started, filled, or completed operations must not be deleted or replaced automatically when the plan changes; the admission must move to `needs_review` and show the difference for manual handling.
 
 ## API Boundary
 
@@ -276,6 +285,8 @@ The transfer must stop or become unavailable when any condition applies:
 - missing start date
 - missing phone type
 - existing main-gym member without member number
+- simultaneous addon operation without the newly issued SLIM member number
+- plan change would replace a started, filled, or completed operation
 - course candidate not exactly one allowlisted match
 - different existing value
 - required field cannot be detected
@@ -311,10 +322,10 @@ Default future flags:
 
 ## Next Required Inputs
 
-To continue beyond Prompt 1 preparation, add the remaining non-sensitive fixtures:
+To continue beyond Prompt 2 admin queue preparation, add the remaining non-sensitive fixtures:
 
 - saved SLIM HTML for the four target pages
 - anonymous test application data
-- a safe local test database or a documented DB test strategy
+- a safe local test database or a documented DB test strategy for operation persistence and extension API behavior
 
 Do not add production DB dumps, real customer photos, SLIM credentials, mail credentials, or production logs.

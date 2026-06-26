@@ -45,12 +45,12 @@ Status legend:
 
 | Item | Status |
 |---|---|
-| Separate application status and SLIM status | Not started |
-| Add normalized transfer values | Not started |
-| Add actual procedure date workflow | Not started |
-| Implement course catalog | Not started |
-| Generate operations for all patterns | Not started |
-| Add locks and audit events | Not started |
+| Separate application status and SLIM status | Done |
+| Add normalized transfer values | Done |
+| Add actual procedure date workflow | Done |
+| Implement course catalog | Done |
+| Generate operations for all patterns | Done |
+| Add locks and audit events | Done |
 
 ### Phase 3: Extension API and Short-Lived Auth
 
@@ -118,6 +118,7 @@ Last result in this workspace:
 - PHP syntax checks passed.
 - `tests/trial_schedule_unit.php` passed.
 - `tests/admission_fee_unit.php` passed.
+- `tests/slim_operations_unit.php` passed.
 - `scripts/import-admissions-json.php --source=tests/fixtures/admission_legacy_sample.json` dry-run passed.
 - `php.exe` execution required elevated tool permission because the sandbox denied it.
 
@@ -127,9 +128,51 @@ Current expected behavior:
 - syntax-checks PHP files if PHP is installed
 - runs imported trial schedule unit checks
 - runs Prompt 1 admission fee and validation unit checks
+- runs Prompt 2 SLIM operation generation and readiness unit checks
 - runs legacy admission JSON import dry-run with an anonymous fixture
 
-DB-backed admission save/list behavior still needs a safe local or staging MySQL database with the Prompt 1 migration applied.
+DB-backed admission save/list and SLIM operation persistence behavior still need a safe local or staging MySQL database with the Prompt 1 and Prompt 2 migrations applied.
+
+## Prompt 2: Admin UI and Operation Queue
+
+Implemented in this workspace:
+
+- Application workflow status and SLIM preparation status are separate values.
+- Admin admission list includes SLIM status filtering and completed/total operation progress.
+- Admin detail shows original application data separately from normalized transfer values.
+- Admin detail requires `actual_procedure_date` before the record can be considered ready for SLIM transfer.
+- Health data remains outside the SLIM transfer copy text and normalized transfer payload.
+- Course rules are centralized in `public_html/admission/inc/slim.php`.
+- `build_slim_operations(array $normalizedAdmission): array` generates the per-application queue instead of a fixed STEP 1-4 workflow.
+- Existing main-gym member addon applications are blocked until `main_member_number` is present.
+- Addition-notification operations after a simultaneous main-gym admission stay blocked until the new SLIM member number is entered.
+- Legacy `weekend` applications generate no operations and require manual review.
+- Operation regeneration does not destructively replace started, filled, or completed operations when the plan changes; the admission is marked `needs_review`.
+- `admission_slim_operations`, `admission_slim_events`, and `admission_locks` are added by migration.
+
+Migration:
+
+- Apply `database/migrations/20260626_admission_slim_operations.sql` after `database/migrations/20260626_admissions_mysql.sql`.
+- After applying the migration, open the admin admission detail, set the actual procedure date, enter any required member numbers, and save. The operation queue is generated during the save transaction.
+
+Operation examples covered by tests:
+
+- standalone basic: `151`
+- standalone double: `135`
+- existing member basic addon: `145`
+- existing member double addon: `146`
+- simultaneous main-gym patterns: `80,145`, `130,146`, `74,145`, `133,146`, `140,145`, `140,141,145`, `140,141,146`, `140,144,145`, `140,144,146`
+- legacy weekend: no operations and manual review
+- missing actual procedure date: not ready
+- missing existing member number: not ready
+- plan change after a completed operation: destructive regeneration is blocked
+
+Human review still recommended:
+
+- Apply the Prompt 2 migration to a safe DB and save the successfully submitted anonymous admission from admin.
+- Confirm the operation queue matches the actual membership selection.
+- Confirm the list SLIM status filter and progress counts work for the saved application.
+- Confirm `needs_review` behavior with a non-production record before relying on it operationally.
 
 ## Prompt 1: Public Form, Fee Engine, MySQL Persistence
 

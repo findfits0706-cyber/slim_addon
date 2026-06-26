@@ -595,6 +595,146 @@ button,
   font-weight: 700;
 }
 
+.admissions-admin-status-card {
+  min-height: 72px;
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  background: var(--admin-surface-soft);
+}
+
+.admissions-admin-status-card strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.admissions-admin-status-card span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admissions-admin-readiness {
+  display: grid;
+  gap: 10px;
+}
+
+.admissions-admin-readiness-box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface-soft);
+}
+
+.admissions-admin-readiness-box strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.admissions-admin-readiness-box ul,
+.admissions-admin-operation-errors {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.admissions-admin-readiness-box.is-error {
+  border-color: rgba(179, 38, 30, 0.28);
+  background: #fff5f4;
+  color: #8a1f19;
+}
+
+.admissions-admin-readiness-box.is-warning {
+  border-color: rgba(154, 123, 97, 0.32);
+  background: #fffaf3;
+  color: #6b513e;
+}
+
+.admissions-admin-operation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admissions-admin-operation-card {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--admin-line);
+  border-left: 4px solid var(--admin-line-strong);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admissions-admin-operation-card.is-ready {
+  border-left-color: #297e4f;
+}
+
+.admissions-admin-operation-card.is-blocked,
+.admissions-admin-operation-card.is-needs_review {
+  border-left-color: #b3261e;
+}
+
+.admissions-admin-operation-card.is-completed {
+  border-left-color: #5d6f8f;
+}
+
+.admissions-admin-operation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admissions-admin-operation-head span {
+  flex: 0 0 auto;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admissions-admin-operation-card dl,
+.admissions-admin-compare-table {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.admissions-admin-operation-card dl div,
+.admissions-admin-compare-table > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admissions-admin-operation-card dl div {
+  grid-template-columns: minmax(120px, 0.5fr) minmax(0, 1fr);
+}
+
+.admissions-admin-operation-card dt,
+.admissions-admin-compare-head {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admissions-admin-operation-card dd {
+  margin: 0;
+}
+
+.admissions-admin-compare-table > div.is-different {
+  background: #fffaf3;
+}
+
+.admissions-admin-compare-table > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .admissions-admin-check-list {
   display: grid;
   gap: 9px;
@@ -832,6 +972,12 @@ button,
   .admissions-admin-grid,
   .campaigns-admin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admissions-admin-operation-card dl div,
+  .admissions-admin-compare-table > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
   }
 
   .campaigns-admin-rule-head {
