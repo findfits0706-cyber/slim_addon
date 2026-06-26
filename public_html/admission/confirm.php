@@ -96,6 +96,7 @@ $_SESSION['admission_form'] = [
     'data' => $data,
     'fees' => $fees,
     'photo' => $photo,
+    'idempotency_key' => $_SESSION['admission_form']['idempotency_key'] ?? bin2hex(random_bytes(32)),
     'created_at' => time(),
 ];
 
@@ -169,6 +170,7 @@ function confirm_rows(array $rows): void
           <table class="confirm-table"><tbody>
             <?php confirm_rows([
                 ['利用開始希望日', date_label($data['start_date'])],
+                ['初月計算区分', (string)($fees['proration']['label'] ?? '')],
                 ['初月の利用可能回数', $fees['initial_visits'] . '回'],
                 ['通常月会費', yen($fees['monthly_fee'])],
                 ['初月会費合計', yen($fees['current_month_fee'])],
@@ -216,6 +218,7 @@ function confirm_rows(array $rows): void
                 ['フリガナ', $data['kana']],
                 ['生年月日', date_label($data['birth']) . ($age === null ? '' : '（' . $age . '歳）')],
                 ['性別', $data['gender'] ?: '未入力'],
+                ['電話番号種別', ($data['phone_type'] ?? '') === 'mobile' ? '携帯TEL' : (($data['phone_type'] ?? '') === 'home' ? '自宅TEL' : '未入力')],
                 ['電話番号', $data['phone']],
                 ['メールアドレス', $data['email']],
                 ['郵便番号', $data['postal_code'] ? '〒' . $data['postal_code'] : '未入力'],

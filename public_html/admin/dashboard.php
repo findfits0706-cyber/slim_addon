@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/config.php';
 require_once __DIR__ . '/../app/db.php';
+require_once __DIR__ . '/../app/schema.php';
 require_once __DIR__ . '/../app/functions.php';
 require_once __DIR__ . '/../app/auth.php';
 require_once __DIR__ . '/../app/admin-ui.php';
@@ -50,20 +51,12 @@ $upcomingSlots = [];
 $recentBookings = [];
 $error = '';
 
-$admissionConfig = require __DIR__ . '/../admission/inc/config.php';
-$admissionStorageFile = (string)($admissionConfig['admin']['storage_file'] ?? '');
-if ($admissionStorageFile !== '' && is_file($admissionStorageFile)) {
-    $admissionJson = json_decode((string)file_get_contents($admissionStorageFile), true);
-    $admissionRecords = is_array($admissionJson) ? $admissionJson : [];
-    $summary['admissions_new'] = count(array_filter(
-        $admissionRecords,
-        static fn($record): bool => is_array($record) && ($record['status'] ?? 'new') === 'new'
-    ));
-}
-
 if ($dbStatus['ok']) {
     try {
         $pdo = db();
+        if (db_table_exists_cached('admissions')) {
+            $summary['admissions_new'] = (int)$pdo->query("SELECT COUNT(*) FROM admissions WHERE application_status = 'new'")->fetchColumn();
+        }
         $weekSlots = admin_slot_instances_between($weekStart, $weekEnd);
         $todaySlots = array_values(array_filter($weekSlots, static fn(array $slot): bool => (string)$slot['booking_date'] === (new DateTimeImmutable('today'))->format('Y-m-d')));
         $summary['today_slots'] = count($todaySlots);

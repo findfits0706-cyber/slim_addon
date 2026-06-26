@@ -155,16 +155,6 @@ $mainCategories = $config['main_club_categories'];
               </div>
             </div>
 
-            <div class="initial-visit-panel">
-              <div class="form-section-title">初月のみ利用回数をお選びいただけます</div>
-              <div class="grid">
-                <div>
-                  <label class="req" for="initialVisits">初月の利用回数</label>
-                  <select id="initialVisits" name="initial_visits" required></select>
-                </div>
-              </div>
-            </div>
-
             <div class="menu-note">
               <strong>利用できる4つのメニュー</strong>
               <ul>
@@ -243,51 +233,50 @@ $mainCategories = $config['main_club_categories'];
 
           <fieldset class="form-step" data-step-title="お客様情報">
             <legend>お客様情報</legend>
+            <input id="name" name="name" type="hidden">
+            <input id="kana" name="kana" type="hidden">
             <div class="grid">
               <div>
-                <label class="req" for="name">氏名</label>
-                <input id="name" name="name" autocomplete="name" placeholder="例：山田 花子" required>
+                <label class="req" for="surname">姓</label>
+                <input id="surname" name="surname" autocomplete="family-name" placeholder="例：山田" maxlength="28" required>
               </div>
               <div>
-                <label class="req" for="kana">フリガナ</label>
-                <input id="kana" name="kana" inputmode="kana" placeholder="例：ヤマダ ハナコ" required>
+                <label class="req" for="givenName">名</label>
+                <input id="givenName" name="given_name" autocomplete="given-name" placeholder="例：花子" maxlength="28" required>
+              </div>
+              <div>
+                <label class="req" for="surnameKana">セイ</label>
+                <input id="surnameKana" name="surname_kana" inputmode="kana" placeholder="例：ヤマダ" maxlength="28" required>
+                <p class="field-note">全角カタカナで入力してください。</p>
+              </div>
+              <div>
+                <label class="req" for="givenNameKana">メイ</label>
+                <input id="givenNameKana" name="given_name_kana" inputmode="kana" placeholder="例：ハナコ" maxlength="28" required>
                 <p class="field-note">全角カタカナで入力してください。</p>
               </div>
             </div>
 
             <div class="grid-3">
               <div>
-                <label class="req" for="birthYear">生年月日</label>
-                <input id="birth" name="birth" type="hidden">
-                <div class="birth-selects" aria-label="生年月日">
-                  <select id="birthYear" name="birth_year" required>
-                    <option value="">西暦</option>
-                    <?php for ($year = (int)date('Y'); $year >= 1900; $year--): ?>
-                      <option value="<?= h((string)$year) ?>"><?= h((string)$year) ?>年</option>
-                    <?php endfor; ?>
-                  </select>
-                  <select id="birthMonth" name="birth_month" required>
-                    <option value="">月</option>
-                    <?php for ($month = 1; $month <= 12; $month++): ?>
-                      <option value="<?= h(str_pad((string)$month, 2, '0', STR_PAD_LEFT)) ?>"><?= h((string)$month) ?>月</option>
-                    <?php endfor; ?>
-                  </select>
-                  <select id="birthDay" name="birth_day" required>
-                    <option value="">日</option>
-                    <?php for ($day = 1; $day <= 31; $day++): ?>
-                      <option value="<?= h(str_pad((string)$day, 2, '0', STR_PAD_LEFT)) ?>"><?= h((string)$day) ?>日</option>
-                    <?php endfor; ?>
-                  </select>
-                </div>
+                <label class="req" for="birth">生年月日</label>
+                <input id="birth" name="birth" type="date" max="<?= h($today) ?>" required>
                 <p class="field-note" id="ageText">年齢を自動計算します。</p>
               </div>
               <div>
-                <label for="gender">性別（任意）</label>
-                <select id="gender" name="gender">
-                  <option value="">選択しない</option>
+                <label class="req" for="gender">性別</label>
+                <select id="gender" name="gender" required>
+                  <option value="">選択してください</option>
                   <option value="女性">女性</option>
                   <option value="男性">男性</option>
                   <option value="その他">その他</option>
+                </select>
+              </div>
+              <div>
+                <label class="req" for="phoneType">電話番号種別</label>
+                <select id="phoneType" name="phone_type" required>
+                  <option value="">選択してください</option>
+                  <option value="mobile">携帯TEL</option>
+                  <option value="home">自宅TEL</option>
                 </select>
               </div>
               <div>
@@ -343,18 +332,18 @@ $mainCategories = $config['main_club_categories'];
               </div>
               <div>
                 <label class="req" for="cityArea">市区町村・町域</label>
-                <input id="cityArea" name="city_area" autocomplete="address-level2" required>
+                <input id="cityArea" name="city_area" autocomplete="address-level2" maxlength="30" required>
               </div>
             </div>
 
             <div class="grid">
               <div>
                 <label class="req" for="streetAddress">番地</label>
-                <input id="streetAddress" name="street_address" autocomplete="street-address" required>
+                <input id="streetAddress" name="street_address" autocomplete="street-address" maxlength="30" required>
               </div>
               <div>
                 <label for="building">建物名・部屋番号（任意）</label>
-                <input id="building" name="building">
+                <input id="building" name="building" maxlength="30">
               </div>
             </div>
 

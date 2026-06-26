@@ -25,6 +25,7 @@ if (!is_array($formSession) || empty($formSession['data']) || empty($formSession
 $data = $formSession['data'];
 $fees = calculate_fees($config, $data);
 $photo = $formSession['photo'] ?? ['ok' => false, 'path' => '', 'filename' => '', 'mime' => '', 'error' => ''];
+$idempotencyKey = (string)($formSession['idempotency_key'] ?? '');
 
 $createdAt = (int)($formSession['created_at'] ?? 0);
 if ($createdAt <= 0 || (time() - $createdAt) > 3600) {
@@ -65,7 +66,36 @@ if ($createdAt <= 0 || (time() - $createdAt) > 3600) {
     exit;
 }
 
-$adminBody = build_admin_mail_body($config, $data, $fees, $photo);
+$existingRecord = $idempotencyKey !== '' ? admission_find_record_by_idempotency_key($idempotencyKey) : null;
+$record = $existingRecord;
+$archivedPhoto = $photo;
+$dbSaved = $existingRecord !== null;
+$saveError = '';
+
+if ($record === null) {
+    try {
+        $archivedPhoto = archive_admission_photo($config, $photo);
+        $record = build_admission_record($config, $data, $fees, $archivedPhoto, [
+            'status' => 'new',
+            'mail_status' => [
+                'admin_sent' => false,
+                'user_sent' => false,
+                'saved_before_mail' => true,
+            ],
+        ]);
+        $record = admission_save_record_to_db($record, $idempotencyKey);
+        $dbSaved = true;
+    } catch (Throwable $e) {
+        $archivedPath = (string)($archivedPhoto['archived_path'] ?? '');
+        if ($archivedPath !== '' && $archivedPath !== (string)($photo['path'] ?? '')) {
+            delete_tmp_file($archivedPath);
+        }
+        $saveError = $e->getMessage();
+        error_log('Admission DB save failed: ' . $saveError);
+    }
+}
+
+$adminBody = build_admin_mail_body($config, $data, $fees, $archivedPhoto);
 $userBody = build_user_mail_body($config, $data, $fees);
 
 $safeSubjectName = preg_replace('/[\r\n]+/', ' ', (string)$data['name']) ?? '';
@@ -75,48 +105,53 @@ $adminSubject = $config['mail']['admin_subject_prefix']
 $userSubject = $config['mail']['user_subject'];
 
 $attachments = [];
-if (!empty($photo['ok']) && !empty($photo['path']) && is_file((string)$photo['path'])) {
+$attachmentPath = (string)($archivedPhoto['archived_path'] ?? $archivedPhoto['path'] ?? '');
+if (!empty($archivedPhoto['ok']) && $attachmentPath !== '' && is_file($attachmentPath)) {
     $attachments[] = [
-        'path' => $photo['path'],
-        'filename' => $photo['filename'] ?: basename((string)$photo['path']),
-        'mime' => $photo['mime'] ?: 'image/jpeg',
+        'path' => $attachmentPath,
+        'filename' => $archivedPhoto['filename'] ?: basename($attachmentPath),
+        'mime' => $archivedPhoto['mime'] ?: 'image/jpeg',
     ];
 }
 
-$adminSent = send_mail_utf8(
-    (string)$config['mail']['admin_to'],
-    $adminSubject,
-    $adminBody,
-    (string)$config['mail']['from'],
-    (string)$config['mail']['from_name'],
-    $attachments
-);
-
+$adminSent = false;
 $userSent = false;
-if (!empty($data['email'])) {
-    $userSent = send_mail_utf8(
-        (string)$data['email'],
-        $userSubject,
-        $userBody,
+
+if ($dbSaved && $existingRecord === null) {
+    $adminSent = send_mail_utf8(
+        (string)$config['mail']['admin_to'],
+        $adminSubject,
+        $adminBody,
         (string)$config['mail']['from'],
-        (string)$config['mail']['from_name']
+        (string)$config['mail']['from_name'],
+        $attachments
     );
-}
 
-$success = $adminSent;
+    if (!empty($data['email'])) {
+        $userSent = send_mail_utf8(
+            (string)$data['email'],
+            $userSubject,
+            $userBody,
+            (string)$config['mail']['from'],
+            (string)$config['mail']['from_name']
+        );
+    }
 
-if ($success) {
-    $archivedPhoto = archive_admission_photo($config, $photo);
-    $record = build_admission_record($config, $data, $fees, $archivedPhoto, [
-        'status' => 'new',
-        'mail_status' => [
+    if (is_array($record)) {
+        $record['mail_status'] = [
             'admin_sent' => $adminSent,
             'user_sent' => $userSent,
-        ],
-    ]);
-    upsert_admission_record($config, $record);
+            'saved_before_mail' => true,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        admission_update_mail_status((string)$record['id'], $record['mail_status']);
+    }
+}
 
-    if (!empty($photo['path'])) {
+$success = $dbSaved;
+
+if ($success) {
+    if (!empty($photo['path']) && (string)$photo['path'] !== $attachmentPath) {
         delete_tmp_file($photo['path']);
     }
     unset($_SESSION['admission_form']);
@@ -144,7 +179,7 @@ if ($success) {
       </div>
     <?php else: ?>
       <h1>送信できませんでした</h1>
-      <p class="lead">メール送信処理でエラーが発生しました。時間をおいて再送信するか、店舗へお問い合わせください。</p>
+      <p class="lead">申込情報を保存できませんでした。時間をおいて再送信するか、店舗へお問い合わせください。</p>
       <div class="badges"><span class="badge">送信エラー</span></div>
     <?php endif; ?>
   </div>
@@ -158,13 +193,14 @@ if ($success) {
         <?php if ($userSent): ?>
           <div class="alert ok show">入力いただいたメールアドレス宛に控えメールを送信しました。</div>
         <?php else: ?>
-          <div class="alert warn show">受付は完了していますが、控えメールの送信に失敗しました。</div>
+          <div class="alert warn show">受付は保存済みです。メール送信に失敗した、または二重送信防止により再送信を省略しました。</div>
         <?php endif; ?>
 
         <div class="confirm-section">
           <h2>お申し込み内容</h2>
           <table class="confirm-table"><tbody>
             <tr><th>氏名</th><td><?= h($data['name']) ?></td></tr>
+            <tr><th>受付ID</th><td><?= h((string)($record['id'] ?? '')) ?></td></tr>
             <tr><th>選択内容</th><td><?= h($fees['course_label']) ?></td></tr>
             <tr><th>利用開始希望日</th><td><?= h(date_label($data['start_date'])) ?></td></tr>
             <tr><th>初回概算合計</th><td><?= h(yen($fees['initial_total'])) ?></td></tr>
@@ -195,7 +231,7 @@ if ($success) {
         </div>
       <?php else: ?>
         <legend>送信状況</legend>
-        <div class="alert danger show">管理者宛メールの送信に失敗しました。</div>
+        <div class="alert danger show">申込情報を保存できませんでした。<?= h($saveError) ?></div>
         <div class="confirm-section">
           <table class="confirm-table"><tbody>
             <tr><th>管理者宛メール</th><td><?= $adminSent ? '送信済み' : '未送信または失敗' ?></td></tr>

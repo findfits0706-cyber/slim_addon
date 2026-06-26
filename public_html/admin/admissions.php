@@ -283,6 +283,14 @@ render_admin_header('入会受付', 'admissions-admin-page');
             </select>
           </div>
           <div>
+            <label for="phoneType">電話番号種別</label>
+            <select id="phoneType" name="phone_type">
+              <option value="" <?= ($formData['phone_type'] ?? '') === '' ? 'selected' : '' ?>>選択してください</option>
+              <option value="mobile" <?= ($formData['phone_type'] ?? '') === 'mobile' ? 'selected' : '' ?>>携帯TEL</option>
+              <option value="home" <?= ($formData['phone_type'] ?? '') === 'home' ? 'selected' : '' ?>>自宅TEL</option>
+            </select>
+          </div>
+          <div>
             <label for="guardianName">保護者名</label>
             <input id="guardianName" name="guardian_name" value="<?= h($formData['guardian_name'] ?? '') ?>">
           </div>

@@ -63,4 +63,36 @@ foreach ($file in $phpFiles) {
     }
 }
 
+$unitTests = @(
+    'tests/trial_schedule_unit.php',
+    'tests/admission_fee_unit.php'
+)
+
+Write-Host 'Running PHP unit smoke tests...'
+foreach ($relative in $unitTests) {
+    $testPath = Join-Path $root $relative
+    if (-not (Test-Path -LiteralPath $testPath)) {
+        if ($Strict) {
+            throw "Missing test file: $relative"
+        }
+        Write-Host "  SKIP $relative"
+        continue
+    }
+
+    & php $testPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "PHP test failed: $relative"
+    }
+}
+
+$importScript = Join-Path $root 'scripts/import-admissions-json.php'
+$legacyFixture = Join-Path $root 'tests/fixtures/admission_legacy_sample.json'
+if ((Test-Path -LiteralPath $importScript) -and (Test-Path -LiteralPath $legacyFixture)) {
+    Write-Host 'Running legacy admission JSON import dry-run...'
+    & php $importScript "--source=$legacyFixture"
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Legacy admission JSON import dry-run failed.'
+    }
+}
+
 Write-Host 'All checks passed.'

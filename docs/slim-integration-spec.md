@@ -1,6 +1,6 @@
 # Find Pilates x SLIM SNG Integration Spec
 
-Status: Prompt 0 foundation. This document is the working source of truth until real repository code and saved SLIM HTML are added.
+Status: Prompt 1 public form and MySQL persistence foundation. This document is the working source of truth until saved SLIM HTML and a safe DB-backed test environment are added.
 
 ## Purpose
 

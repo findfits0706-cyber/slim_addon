@@ -1,0 +1,49 @@
+[
+  {
+    "id": "adm_legacy_sample_001",
+    "status": "new",
+    "created_at": "2026-07-01 10:00:00",
+    "created_at_ts": 1782867600,
+    "updated_at": "2026-07-01 10:00:00",
+    "updated_at_ts": 1782867600,
+    "admin_note": "",
+    "mail_status": {
+      "admin_sent": false,
+      "user_sent": false
+    },
+    "photo": {},
+    "data": {
+      "use_type": "new",
+      "course": "basic",
+      "start_date": "2026-07-08",
+      "surname": "Sample",
+      "given_name": "User",
+      "surname_kana": "SAMPLE",
+      "given_name_kana": "USER",
+      "name": "Sample User",
+      "kana": "SAMPLE USER",
+      "birth": "1990-01-01",
+      "gender": "other",
+      "phone_type": "mobile",
+      "phone": "09000000000",
+      "email": "sample@example.invalid",
+      "postal_code": "0000000",
+      "prefecture": "Tokyo",
+      "city_area": "Sample City",
+      "street_address": "1-1",
+      "building": "",
+      "address": "Tokyo Sample City 1-1",
+      "emergency_name": "Sample Contact",
+      "emergency_relationship": "family",
+      "emergency_phone": "09000000001",
+      "terms_agree": "1",
+      "health_checks": []
+    },
+    "fees": {
+      "monthly_visits": 8,
+      "initial_visits": 6,
+      "pilates_current_month_fee": 6600,
+      "initial_total": 17600
+    }
+  }
+]

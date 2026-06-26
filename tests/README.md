@@ -1,6 +1,6 @@
 # Test Entry
 
-Current foundation check:
+Current check command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run-checks.ps1
@@ -12,12 +12,20 @@ Use strict mode in CI or when PHP must be installed:
 powershell -ExecutionPolicy Bypass -File .\scripts\run-checks.ps1 -Strict
 ```
 
-At Prompt 0 time this workspace does not contain the existing PHP application, migrations, or SLIM HTML fixtures. The check therefore validates foundation files and runs `php -l` only for PHP files that exist.
+The check currently:
 
-When the real repository is added, extend this entrypoint with the existing project test command instead of replacing local project conventions.
+- verifies required foundation documents and config example exist
+- syntax-checks tracked PHP files when PHP is available
+- runs `tests/trial_schedule_unit.php`
+- runs `tests/admission_fee_unit.php`
+- runs the legacy admission JSON import command in dry-run mode with `tests/fixtures/admission_legacy_sample.json`
 
-Existing imported test:
+Individual checks:
 
 ```powershell
 php .\tests\trial_schedule_unit.php
+php .\tests\admission_fee_unit.php
+php .\scripts\import-admissions-json.php --source=.\tests\fixtures\admission_legacy_sample.json
 ```
+
+DB-backed admission save/list behavior is not covered here until a safe local or staging MySQL database is provided.

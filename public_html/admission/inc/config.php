@@ -24,7 +24,7 @@ return [
     'admin' => [
         'storage_file' => __DIR__ . '/../tmp/admissions.json',
         'campaigns_file' => __DIR__ . '/../tmp/campaigns.json',
-        'photo_archive_dir' => __DIR__ . '/../tmp/archive',
+        'photo_archive_dir' => dirname(__DIR__, 3) . '/storage/admission_photos/archive',
         'status_options' => [
             'new' => '未対応',
             'contacting' => '連絡中',
@@ -43,7 +43,7 @@ return [
     ],
 
     'campaign' => [
-        'enabled' => true,
+        'enabled' => false,
         'months' => [7, 8],
         'start_date' => '2026-07-01',
         'end_date' => '2026-08-31',
@@ -51,8 +51,8 @@ return [
         'join_fee' => 0,
         'single_initial_fee' => 0,
         'addon_initial_fees' => [
-            8 => 2200,
-            16 => 4400,
+            8 => 3850,
+            16 => 7700,
         ],
     ],
 
@@ -65,14 +65,14 @@ return [
         ],
         'double' => [
             'label' => 'ダブル会員',
-            'monthly_fee' => 13200,
+            'monthly_fee' => 12650,
             'monthly_visits' => 16,
             'description' => '月16回、4つのメニューから自由に選択',
         ],
         // 旧URLや保存済みデータとの互換用。画面表示はダブル会員に統一します。
         'pilates_plus' => [
             'label' => 'ダブル会員',
-            'monthly_fee' => 13200,
+            'monthly_fee' => 12650,
             'monthly_visits' => 16,
             'description' => '月16回、4つのメニューから自由に選択',
         ],
@@ -116,12 +116,6 @@ return [
             'monthly_fee' => 8030,
             'description' => '34才以下で夜間・土日祝を中心に利用したい方向けです。',
         ],
-        'weekend' => [
-            'category' => 'time',
-            'label' => 'ウィークエンド会員',
-            'monthly_fee' => 7700,
-            'description' => '土日祝の利用を中心にしたい方向けです。',
-        ],
         'gym_free' => [
             'category' => 'area',
             'label' => 'ジムフリー会員',
@@ -151,20 +145,20 @@ return [
     'pilates_addons' => [
         'basic' => [
             'label' => 'ピラティスベーシック会員',
-            'add_fee' => 4400,
+            'add_fee' => 3850,
             'monthly_visits' => 8,
             'description' => '4つのメニューから自由に月8回利用',
         ],
         'double' => [
             'label' => 'ピラティスダブル会員',
-            'add_fee' => 8800,
+            'add_fee' => 7700,
             'monthly_visits' => 16,
             'description' => '4つのメニューから自由に月16回利用',
         ],
         // 旧保存値との互換用。
         'master' => [
             'label' => 'ピラティスダブル会員',
-            'add_fee' => 8800,
+            'add_fee' => 7700,
             'monthly_visits' => 16,
             'description' => '4つのメニューから自由に月16回利用',
         ],
@@ -183,7 +177,7 @@ return [
         '14:30-16:00' => '14:30〜16:00',
         '16:00-17:30' => '16:00〜17:30',
         '17:30-19:00' => '17:30〜19:00',
-        '19:30-20:30' => '19:30〜20:30',
+        '19:00-20:00' => '19:00〜20:00',
     ],
     'procedure_time_slots_sunday' => [
         '' => '指定なし',
@@ -200,7 +194,7 @@ return [
         '14:30-16:00' => '14:30〜16:00',
         '16:00-17:30' => '16:00〜17:30',
         '17:30-19:00' => '17:30〜19:00',
-        '19:30-20:30' => '19:30〜20:30',
+        '19:00-20:00' => '19:00〜20:00',
     ],
     'closed_dates' => [],
     'closed_day_rules' => [],
@@ -260,12 +254,12 @@ return [
             'image/png',
             'image/webp',
         ],
-        'tmp_dir' => __DIR__ . '/../tmp',
+        'tmp_dir' => dirname(__DIR__, 3) . '/storage/admission_photos/tmp',
     ],
 
     'texts' => [
-        'price_notice' => '表示金額は現時点の概算です。初月会費は選択した初月利用回数に応じて計算します。正式金額は店頭手続き時に確定します。',
-        'start_date_help' => 'ご利用を始めたい日です。初月の利用回数はプラン選択画面で選択します。',
+        'price_notice' => '表示金額は現時点の概算です。初月会費と初月利用回数は利用開始希望日から自動計算します。正式金額は店頭手続き時に確定します。',
+        'start_date_help' => 'ご利用を始めたい日です。初月の利用回数は利用開始希望日から自動計算します。',
         'procedure_date_help' => '本人確認・口座登録・利用案内を行うための来店希望日です。',
         'addon_help' => '本館会員の月会費に追加して、Find Pilatesの利用回数を付ける項目です。4つのメニューから自由に選べます。',
     ],

@@ -6,6 +6,8 @@ if (basename($_SERVER['SCRIPT_FILENAME'] ?? '') === basename(__FILE__)) {
     exit('Forbidden');
 }
 
+require_once __DIR__ . '/repository.php';
+
 if (!function_exists('h')) {
     function h(mixed $value): string
     {
@@ -74,6 +76,22 @@ function normalize_postal_code(string $postalCode): string
     return preg_replace('/[^\d]/', '', $postalCode) ?? '';
 }
 
+function split_legacy_person_name(string $name): array
+{
+    $name = trim(preg_replace('/[\s　]+/u', ' ', $name) ?? $name);
+    if ($name === '') {
+        return ['', ''];
+    }
+
+    $parts = explode(' ', $name, 2);
+    return [$parts[0] ?? '', $parts[1] ?? ''];
+}
+
+function admission_text_length(string $value): int
+{
+    return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+}
+
 if (!function_exists('csrf_token')) {
     function csrf_token(): string
     {
@@ -107,6 +125,24 @@ function collect_form_data(array $post): array
     $postalCode = normalize_postal_code((string)($post['postal_code'] ?? ''));
     $phone = normalize_phone((string)($post['phone'] ?? ''));
     $emergencyPhone = normalize_phone((string)($post['emergency_phone'] ?? ''));
+    $surname = trim((string)($post['surname'] ?? ''));
+    $givenName = trim((string)($post['given_name'] ?? ''));
+    $surnameKana = trim((string)($post['surname_kana'] ?? ''));
+    $givenNameKana = trim((string)($post['given_name_kana'] ?? ''));
+    $legacyName = trim((string)($post['name'] ?? ''));
+    $legacyKana = trim((string)($post['kana'] ?? ''));
+
+    if (($surname === '' || $givenName === '') && $legacyName !== '') {
+        [$derivedSurname, $derivedGivenName] = split_legacy_person_name($legacyName);
+        $surname = $surname !== '' ? $surname : $derivedSurname;
+        $givenName = $givenName !== '' ? $givenName : $derivedGivenName;
+    }
+
+    if (($surnameKana === '' || $givenNameKana === '') && $legacyKana !== '') {
+        [$derivedSurnameKana, $derivedGivenNameKana] = split_legacy_person_name($legacyKana);
+        $surnameKana = $surnameKana !== '' ? $surnameKana : $derivedSurnameKana;
+        $givenNameKana = $givenNameKana !== '' ? $givenNameKana : $derivedGivenNameKana;
+    }
 
     $prefecture = trim((string)($post['prefecture'] ?? ''));
     $cityArea = trim((string)($post['city_area'] ?? ''));
@@ -138,14 +174,19 @@ function collect_form_data(array $post): array
         'procedure_time_2' => trim((string)($post['procedure_time_2'] ?? '')),
         'procedure_date_3' => trim((string)($post['procedure_date_3'] ?? '')),
         'procedure_time_3' => trim((string)($post['procedure_time_3'] ?? '')),
-        'name' => trim((string)($post['name'] ?? '')),
-        'kana' => trim((string)($post['kana'] ?? '')),
+        'surname' => $surname,
+        'given_name' => $givenName,
+        'surname_kana' => $surnameKana,
+        'given_name_kana' => $givenNameKana,
+        'name' => trim($surname . ' ' . $givenName),
+        'kana' => trim($surnameKana . ' ' . $givenNameKana),
         'birth' => $birth,
         'birth_year' => $birthYear,
         'birth_month' => $birthMonth,
         'birth_day' => $birthDay,
         'school_confirmation' => trim((string)($post['school_confirmation'] ?? '')),
         'gender' => trim((string)($post['gender'] ?? '')),
+        'phone_type' => trim((string)($post['phone_type'] ?? '')),
         'phone' => $phone,
         'email' => trim((string)($post['email'] ?? '')),
         'postal_code' => $postalCode,
@@ -194,6 +235,37 @@ function calculate_initial_fee_by_visits(int $monthlyFee, int $monthlyVisits, in
     return (int)round($monthlyFee * ($initialVisits / $monthlyVisits));
 }
 
+function admission_start_week_proration(string $startDate, int $monthlyVisits): array
+{
+    if (!is_valid_date_string($startDate)) {
+        return [
+            'bucket' => '',
+            'ratio' => 0.0,
+            'visits' => 0,
+            'label' => '未設定',
+        ];
+    }
+
+    $day = (int)(new DateTimeImmutable($startDate))->format('j');
+    if ($day <= 7) {
+        return ['bucket' => 'day_1_7', 'ratio' => 1.0, 'visits' => $monthlyVisits, 'label' => '1〜7日'];
+    }
+    if ($day <= 14) {
+        return ['bucket' => 'day_8_14', 'ratio' => 0.75, 'visits' => (int)round($monthlyVisits * 0.75), 'label' => '8〜14日'];
+    }
+    if ($day <= 21) {
+        return ['bucket' => 'day_15_21', 'ratio' => 0.5, 'visits' => (int)round($monthlyVisits * 0.5), 'label' => '15〜21日'];
+    }
+
+    return ['bucket' => 'day_22_end', 'ratio' => 0.25, 'visits' => (int)round($monthlyVisits * 0.25), 'label' => '22日〜月末'];
+}
+
+function calculate_pilates_initial_fee(int $monthlyFee, string $startDate): int
+{
+    $proration = admission_start_week_proration($startDate, 8);
+    return (int)round($monthlyFee * (float)$proration['ratio'], 0, PHP_ROUND_HALF_UP);
+}
+
 function calculate_prorated_monthly_fee(int $monthlyFee, string $startDate): int
 {
     if ($monthlyFee <= 0 || !is_valid_date_string($startDate)) {
@@ -208,7 +280,7 @@ function calculate_prorated_monthly_fee(int $monthlyFee, string $startDate): int
 
     $daysInMonth = (int)$date->format('t');
     $remainingDays = $daysInMonth - (int)$date->format('j') + 1;
-    return (int)round($monthlyFee * ($remainingDays / $daysInMonth));
+    return (int)round($monthlyFee * ($remainingDays / $daysInMonth), 0, PHP_ROUND_HALF_UP);
 }
 
 function normalize_campaign_code(string $code): string
@@ -248,7 +320,7 @@ function default_campaign_settings(array $config): array
             'target_addon_basic_total' => (int)($legacy['addon_initial_fees'][8] ?? 0) + (int)($legacy['join_fee'] ?? 0),
             'target_addon_double_total' => (int)($legacy['addon_initial_fees'][16] ?? 0) + (int)($legacy['join_fee'] ?? 0),
             'discount_rules' => [],
-            'note' => 'Find Pilates単体は7月8月0円。本館併用はベーシック2,200円、ダブル4,400円。',
+            'note' => 'キャンペーンは初期状態では無効です。利用する場合は確定料金に合わせて設定してください。',
         ],
     ];
 }
@@ -619,7 +691,6 @@ function calculate_fees(array $config, array $data): array
     if ($useType === 'add' && $mainMemberStatus === 'existing') {
         $joinFee = 0;
     }
-    $postedInitialVisits = $data['initial_visits'] ?? '';
     $startDate = (string)($data['start_date'] ?? '');
 
     if ($useType === 'add') {
@@ -630,7 +701,9 @@ function calculate_fees(array $config, array $data): array
             $mainMembershipLabel = (string)$main['label'];
             $mainMembershipDescription = (string)$main['description'];
             $baseMonthlyFee = (int)$main['monthly_fee'];
-            $mainClubInitialFee = calculate_prorated_monthly_fee($baseMonthlyFee, $startDate);
+            if ($mainMemberStatus === 'simultaneous') {
+                $mainClubInitialFee = calculate_prorated_monthly_fee($baseMonthlyFee, $startDate);
+            }
         }
 
         if ($addon) {
@@ -638,13 +711,13 @@ function calculate_fees(array $config, array $data): array
             $addonDescription = (string)$addon['description'];
             $addonFee = (int)$addon['add_fee'];
             $monthlyVisits = (int)$addon['monthly_visits'];
-            $initialVisits = normalize_initial_visits($config, $monthlyVisits, $postedInitialVisits);
-            $addonInitialFee = calculate_initial_fee_by_visits($addonFee, $monthlyVisits, $initialVisits);
+            $proration = admission_start_week_proration($startDate, $monthlyVisits);
+            $initialVisits = (int)$proration['visits'];
+            $addonInitialFee = calculate_pilates_initial_fee($addonFee, $startDate);
         }
 
         $pilatesMonthlyFee = $addonFee;
         $monthlyFee = $baseMonthlyFee + $addonFee;
-        $regularInitialTotal += $addonInitialFee;
         $courseLabel = trim($mainMembershipLabel . ' ＋ ' . $addonLabel);
         $courseDescription = trim($mainMembershipDescription . "\n" . $addonDescription);
     } else {
@@ -655,10 +728,10 @@ function calculate_fees(array $config, array $data): array
             $courseDescription = (string)$course['description'];
             $monthlyVisits = (int)$course['monthly_visits'];
             $pilatesMonthlyFee = (int)$course['monthly_fee'];
-            $initialVisits = normalize_initial_visits($config, $monthlyVisits, $postedInitialVisits);
-            $pilatesInitialFee = calculate_initial_fee_by_visits($pilatesMonthlyFee, $monthlyVisits, $initialVisits);
+            $proration = admission_start_week_proration($startDate, $monthlyVisits);
+            $initialVisits = (int)$proration['visits'];
+            $pilatesInitialFee = calculate_pilates_initial_fee($pilatesMonthlyFee, $startDate);
             $monthlyFee = $pilatesMonthlyFee;
-            $regularInitialTotal += $pilatesInitialFee;
         }
     }
 
@@ -717,6 +790,7 @@ function calculate_fees(array $config, array $data): array
         'monthly_visits' => $monthlyVisits,
         'initial_visits' => $initialVisits,
         'initial_rate' => $monthlyVisits > 0 ? $initialVisits / $monthlyVisits : 0,
+        'proration' => admission_start_week_proration($startDate, $monthlyVisits),
         'base_monthly_fee' => $baseMonthlyFee,
         'main_club_initial_fee' => $mainClubInitialFee,
         'addon_fee' => $addonFee,
@@ -839,7 +913,7 @@ function validate_form(array $config, array $data, bool $isConfirm = false): arr
         $errors['use_type'] = '利用形態を選択してください。';
     }
 
-    if ($data['use_type'] === 'new' && !isset($config['pilates_courses'][$data['course']])) {
+    if ($data['use_type'] === 'new' && !in_array((string)($data['course'] ?? ''), ['basic', 'double'], true)) {
         $errors['course'] = 'プランを選択してください。';
     }
 
@@ -850,24 +924,11 @@ function validate_form(array $config, array $data, bool $isConfirm = false): arr
         if (!isset($config['main_club_memberships'][$data['main_membership']])) {
             $errors['main_membership'] = '本館会員種別を選択してください。';
         }
-        if (!isset($config['pilates_addons'][$data['addon']])) {
+        if (!in_array((string)($data['addon'] ?? ''), ['basic', 'double'], true)) {
             $errors['addon'] = 'Find Pilates種別を選択してください。';
         }
-    }
-
-    $selectedMonthlyVisits = 0;
-    if ($data['use_type'] === 'add') {
-        $selectedAddon = $config['pilates_addons'][$data['addon']] ?? null;
-        $selectedMonthlyVisits = $selectedAddon ? (int)$selectedAddon['monthly_visits'] : 0;
-    } else {
-        $selectedCourse = $config['pilates_courses'][$data['course']] ?? null;
-        $selectedMonthlyVisits = $selectedCourse ? (int)$selectedCourse['monthly_visits'] : 0;
-    }
-
-    if ($selectedMonthlyVisits > 0) {
-        $allowedInitialVisits = initial_visit_options($config, $selectedMonthlyVisits);
-        if (!in_array((int)$data['initial_visits'], $allowedInitialVisits, true)) {
-            $errors['initial_visits'] = '初月の利用回数を選択してください。';
+        if (($data['main_membership'] ?? '') === 'weekend') {
+            $errors['main_membership'] = 'ウィークエンド会員は現在Web入会の新規選択対象外です。別の本館会員種別を選択してください。';
         }
     }
 
@@ -921,13 +982,33 @@ function validate_form(array $config, array $data, bool $isConfirm = false): arr
         $seenPrefs[$key] = true;
     }
 
-    if ($data['name'] === '') {
-        $errors['name'] = '氏名を入力してください。';
+    if (($data['main_membership'] ?? '') === 'night_holiday_u34'
+        && is_valid_date_string((string)($data['birth'] ?? ''))
+        && is_valid_date_string((string)($data['start_date'] ?? ''))
+    ) {
+        $birthDate = new DateTimeImmutable((string)$data['birth']);
+        $startDate = new DateTimeImmutable((string)$data['start_date']);
+        if ((int)$birthDate->diff($startDate)->y >= 35) {
+            $errors['main_membership'] = 'ナイト＆ホリデー会員（34才以下）は、利用開始日時点で34歳以下の方が対象です。';
+        }
     }
-    if ($data['kana'] === '') {
-        $errors['kana'] = 'フリガナを入力してください。';
-    } elseif (!preg_match('/^[\x{30A0}-\x{30FF}\x{3000}\s]+$/u', $data['kana'])) {
-        $errors['kana'] = 'フリガナは全角カタカナで入力してください。';
+
+    foreach ([
+        'surname' => '姓',
+        'given_name' => '名',
+        'surname_kana' => 'セイ',
+        'given_name_kana' => 'メイ',
+    ] as $key => $label) {
+        if (($data[$key] ?? '') === '') {
+            $errors[$key] = $label . 'を入力してください。';
+        } elseif (admission_text_length((string)$data[$key]) > 28) {
+            $errors[$key] = $label . 'は28文字以内で入力してください。';
+        }
+    }
+
+    $kanaValue = trim((string)($data['surname_kana'] ?? '') . (string)($data['given_name_kana'] ?? ''));
+    if ($kanaValue !== '' && !preg_match('/^[\x{30A0}-\x{30FF}\x{3000}\s]+$/u', $kanaValue)) {
+        $errors['kana'] = 'セイ・メイは全角カタカナで入力してください。';
     }
 
     if ($data['birth'] === '') {
@@ -949,6 +1030,12 @@ function validate_form(array $config, array $data, bool $isConfirm = false): arr
         $errors['school_confirmation'] = '15歳前後の方は、中学生以下ではないことの確認にチェックしてください。';
     }
 
+    if (!in_array((string)($data['gender'] ?? ''), ['男性', '女性', 'その他'], true)) {
+        $errors['gender'] = '性別を選択してください。';
+    }
+    if (!in_array((string)($data['phone_type'] ?? ''), ['mobile', 'home'], true)) {
+        $errors['phone_type'] = '電話番号種別を選択してください。';
+    }
     if ($data['phone'] === '') {
         $errors['phone'] = '電話番号を入力してください。';
     } elseif (strlen($data['phone']) < 10 || strlen($data['phone']) > 11) {
@@ -967,9 +1054,16 @@ function validate_form(array $config, array $data, bool $isConfirm = false): arr
     }
     if ($data['city_area'] === '') {
         $errors['city_area'] = '市区町村・町域を入力してください。';
+    } elseif (admission_text_length((string)$data['city_area']) > 30) {
+        $errors['city_area'] = '住所1（市区町村・町域）は30文字以内で入力してください。';
     }
     if ($data['street_address'] === '') {
         $errors['street_address'] = '番地を入力してください。';
+    } elseif (admission_text_length((string)$data['street_address']) > 30) {
+        $errors['street_address'] = '住所2（番地）は30文字以内で入力してください。';
+    }
+    if (admission_text_length((string)($data['building'] ?? '')) > 30) {
+        $errors['building'] = '住所3（建物名・部屋番号）は30文字以内で入力してください。';
     }
     if ($data['emergency_name'] === '') {
         $errors['emergency_name'] = '緊急連絡先の氏名を入力してください。';
@@ -1129,6 +1223,7 @@ function fee_summary_lines(array $data, array $fees): array
         '選択プラン：' . ($fees['course_label'] ?? ''),
         '月間利用可能回数：' . (string)($fees['monthly_visits'] ?? 0) . '回',
         '利用開始希望日：' . date_label($data['start_date'] ?? ''),
+        '初月計算区分：' . (string)($fees['proration']['label'] ?? ''),
         '初月の利用可能回数：' . (string)($fees['initial_visits'] ?? 0) . '回',
         '通常月会費：' . yen((int)($fees['monthly_fee'] ?? 0)),
         '初月会費合計：' . yen((int)($fees['current_month_fee'] ?? 0)),
@@ -1209,6 +1304,7 @@ function build_admin_mail_body(array $config, array $data, array $fees, array $p
     $lines[] = 'フリガナ：' . $data['kana'];
     $lines[] = '生年月日：' . date_label($data['birth']) . ($age === null ? '' : '（' . $age . '歳）');
     $lines[] = '性別：' . ($data['gender'] ?: '未入力');
+    $lines[] = '電話番号種別：' . (($data['phone_type'] ?? '') === 'mobile' ? '携帯TEL' : (($data['phone_type'] ?? '') === 'home' ? '自宅TEL' : '未入力'));
     $lines[] = '電話番号：' . $data['phone'];
     $lines[] = 'メール：' . $data['email'];
     $lines[] = '郵便番号：' . ($data['postal_code'] ?: '未入力');
@@ -1354,29 +1450,17 @@ function admission_storage_file(array $config): string
 
 function load_admission_records(array $config): array
 {
-    $storageFile = admission_storage_file($config);
-    if ($storageFile === '' || !is_file($storageFile)) {
-        return [];
-    }
-
-    $records = json_decode((string)file_get_contents($storageFile), true);
-    if (!is_array($records)) {
-        return [];
-    }
-
-    usort($records, static fn(array $a, array $b): int => (int)($b['created_at_ts'] ?? 0) <=> (int)($a['created_at_ts'] ?? 0));
-    return $records;
+    return admission_load_records_from_db();
 }
 
 function save_admission_records(array $config, array $records): bool
 {
-    $storageFile = admission_storage_file($config);
-    if ($storageFile === '') {
-        return false;
+    foreach ($records as $record) {
+        if (is_array($record)) {
+            admission_save_record_to_db($record);
+        }
     }
-    ensure_dir(dirname($storageFile));
-    $json = json_encode(array_values($records), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    return $json !== false && file_put_contents($storageFile, $json, LOCK_EX) !== false;
+    return true;
 }
 
 function find_admission_record(array $records, string $id): ?array
@@ -1391,19 +1475,24 @@ function find_admission_record(array $records, string $id): ?array
 
 function upsert_admission_record(array $config, array $record): bool
 {
-    $records = load_admission_records($config);
-    $updated = false;
-    foreach ($records as $index => $existing) {
-        if ((string)($existing['id'] ?? '') === (string)$record['id']) {
-            $records[$index] = $record;
-            $updated = true;
-            break;
-        }
+    admission_save_record_to_db($record);
+    return true;
+}
+
+function load_legacy_admission_json_records(array $config): array
+{
+    $storageFile = admission_storage_file($config);
+    if ($storageFile === '' || !is_file($storageFile)) {
+        return [];
     }
-    if (!$updated) {
-        $records[] = $record;
+
+    $records = json_decode((string)file_get_contents($storageFile), true);
+    if (!is_array($records)) {
+        return [];
     }
-    return save_admission_records($config, $records);
+
+    usort($records, static fn(array $a, array $b): int => (int)($b['created_at_ts'] ?? 0) <=> (int)($a['created_at_ts'] ?? 0));
+    return $records;
 }
 
 function build_admission_record(array $config, array $data, array $fees, array $photo = [], array $overrides = []): array
@@ -1444,6 +1533,10 @@ function admission_blank_data(): array
         'procedure_time_2' => '',
         'procedure_date_3' => '',
         'procedure_time_3' => '',
+        'surname' => '',
+        'given_name' => '',
+        'surname_kana' => '',
+        'given_name_kana' => '',
         'name' => '',
         'kana' => '',
         'birth' => '',
@@ -1452,6 +1545,7 @@ function admission_blank_data(): array
         'birth_day' => '',
         'school_confirmation' => '',
         'gender' => '',
+        'phone_type' => '',
         'phone' => '',
         'email' => '',
         'postal_code' => '',
@@ -1551,6 +1645,7 @@ function build_slim_copy_text(array $config, array $record): string
     $lines[] = '生年月日（西暦）：' . date_label($data['birth'] ?? '');
     $lines[] = '生年月日（和暦）：' . wareki_date_label($data['birth'] ?? '');
     $lines[] = '年齢：' . ($age === null ? '' : $age . '歳');
+    $lines[] = '電話番号種別：' . (($data['phone_type'] ?? '') === 'mobile' ? '携帯TEL' : (($data['phone_type'] ?? '') === 'home' ? '自宅TEL' : '未入力'));
     $lines[] = '電話番号：' . ($data['phone'] ?? '');
     $lines[] = 'メール：' . ($data['email'] ?? '');
     $lines[] = '郵便番号：' . ($data['postal_code'] ?? '');
@@ -1561,6 +1656,7 @@ function build_slim_copy_text(array $config, array $record): string
     $lines[] = '利用形態：' . use_type_label($data);
     $lines[] = '選択内容：' . ($fees['course_label'] ?? '');
     $lines[] = '月間利用回数：' . ($fees['monthly_visits'] ?? '') . '回';
+    $lines[] = '初月計算区分：' . (string)($fees['proration']['label'] ?? '');
     $lines[] = '初月利用回数：' . ($fees['initial_visits'] ?? '') . '回';
     $lines[] = '通常月会費：' . yen((int)($fees['monthly_fee'] ?? 0));
     $lines[] = '初月会費合計：' . yen((int)($fees['current_month_fee'] ?? 0));

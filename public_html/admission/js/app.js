@@ -37,6 +37,13 @@
       birthYear: $("#birthYear"),
       birthMonth: $("#birthMonth"),
       birthDay: $("#birthDay"),
+      surname: $("#surname"),
+      givenName: $("#givenName"),
+      surnameKana: $("#surnameKana"),
+      givenNameKana: $("#givenNameKana"),
+      name: $("#name"),
+      kana: $("#kana"),
+      phoneType: $("#phoneType"),
       ageText: $("#ageText"),
       minorPanel: $("#minorPanel"),
       guardianName: $("#guardianName"),
@@ -103,9 +110,19 @@
       var _a2;
       return Number(((_a2 = elements.initialVisits) == null ? void 0 : _a2.value) || 0);
     }
-    function initialFee(monthlyFee, monthlyVisits, initialVisits) {
-      if (!monthlyFee || !monthlyVisits || !initialVisits) return 0;
-      return Math.round(Number(monthlyFee) * (Number(initialVisits) / Number(monthlyVisits)));
+    function weeklyProration(startDate, monthlyVisits) {
+      const date = parseDate(startDate || "");
+      if (!date || !monthlyVisits) return { ratio: 0, visits: 0 };
+      const day = date.getDate();
+      if (day <= 7) return { ratio: 1, visits: Number(monthlyVisits) };
+      if (day <= 14) return { ratio: 0.75, visits: Math.round(Number(monthlyVisits) * 0.75) };
+      if (day <= 21) return { ratio: 0.5, visits: Math.round(Number(monthlyVisits) * 0.5) };
+      return { ratio: 0.25, visits: Math.round(Number(monthlyVisits) * 0.25) };
+    }
+    function calcPilatesInitialFee(monthlyFee, startDate) {
+      const proration = weeklyProration(startDate, 8);
+      if (!monthlyFee || !proration.ratio) return 0;
+      return Math.round(Number(monthlyFee) * proration.ratio);
     }
     function proratedMonthlyFee(monthlyFee, startDate) {
       var date = parseDate(startDate || "");
@@ -247,11 +264,12 @@
     function renderInitialVisitOptions() {
       if (!elements.initialVisits) return;
       const monthlyVisits = currentMonthlyVisits();
-      const choices = initialVisitChoices(monthlyVisits);
-      const selected = selectedInitialVisits();
-      const nextSelected = choices.includes(selected) ? selected : choices[choices.length - 1];
-      elements.initialVisits.innerHTML = choices.map((visits) => '<option value="'.concat(visits, '">').concat(visits, "\u56DE</option>")).join("");
-      elements.initialVisits.value = String(nextSelected);
+      const proration = weeklyProration((elements.startDate == null ? void 0 : elements.startDate.value) || "", monthlyVisits);
+      const visits = proration.visits || monthlyVisits;
+      if (elements.initialVisits.tagName === "SELECT") {
+        elements.initialVisits.innerHTML = '<option value="'.concat(visits, '">').concat(visits, "\u56DE</option>");
+      }
+      elements.initialVisits.value = String(visits);
     }
     function calcFees() {
       const useType = getUseType();
@@ -273,11 +291,12 @@
         const mainLabel = (main == null ? void 0 : main.dataset.label) || "\u672C\u9928\u4F1A\u54E1\u672A\u9078\u629E";
         const addonLabel = (addon == null ? void 0 : addon.dataset.label) || "\u7A2E\u5225\u672A\u9078\u629E";
         baseMonthlyFee = Number((main == null ? void 0 : main.dataset.base) || 0);
-        mainClubInitialFee = proratedMonthlyFee(baseMonthlyFee, (elements.startDate == null ? void 0 : elements.startDate.value) || "");
+        mainClubInitialFee = getMainStatus() === "simultaneous" ? proratedMonthlyFee(baseMonthlyFee, (elements.startDate == null ? void 0 : elements.startDate.value) || "") : 0;
         addonFee = Number((addon == null ? void 0 : addon.dataset.fee) || 0);
         monthlyVisits = Number((addon == null ? void 0 : addon.dataset.visits) || 0);
-        initialVisits = selectedInitialVisits() || monthlyVisits;
-        addonInitialFee = initialFee(addonFee, monthlyVisits, initialVisits);
+        const proration = weeklyProration((elements.startDate == null ? void 0 : elements.startDate.value) || "", monthlyVisits);
+        initialVisits = proration.visits || monthlyVisits;
+        addonInitialFee = calcPilatesInitialFee(addonFee, (elements.startDate == null ? void 0 : elements.startDate.value) || "");
         pilatesMonthlyFee = addonFee;
         monthlyFee = baseMonthlyFee + addonFee;
         label = "".concat(mainLabel, " \uFF0B ").concat(addonLabel);
@@ -288,8 +307,9 @@
         description = (course == null ? void 0 : course.dataset.description) || "";
         monthlyVisits = Number((course == null ? void 0 : course.dataset.visits) || 0);
         pilatesMonthlyFee = Number((course == null ? void 0 : course.dataset.fee) || 0);
-        initialVisits = selectedInitialVisits() || monthlyVisits;
-        pilatesInitialFee = initialFee(pilatesMonthlyFee, monthlyVisits, initialVisits);
+        const proration = weeklyProration((elements.startDate == null ? void 0 : elements.startDate.value) || "", monthlyVisits);
+        initialVisits = proration.visits || monthlyVisits;
+        pilatesInitialFee = calcPilatesInitialFee(pilatesMonthlyFee, (elements.startDate == null ? void 0 : elements.startDate.value) || "");
         monthlyFee = pilatesMonthlyFee;
       }
       const activeCampaigns = (Array.isArray(CONFIG.campaigns) ? CONFIG.campaigns : []).filter(isCampaignActive);
@@ -438,8 +458,17 @@
       if (!date) return "";
       return "".concat(date.getFullYear(), "\u5E74").concat(date.getMonth() + 1, "\u6708").concat(date.getDate(), "\u65E5\uFF08").concat(WEEKDAY_LABELS[date.getDay()], "\uFF09");
     }
+    function syncDerivedNameFields() {
+      const surname = ((elements.surname == null ? void 0 : elements.surname.value) || "").trim();
+      const given = ((elements.givenName == null ? void 0 : elements.givenName.value) || "").trim();
+      const surnameKana = ((elements.surnameKana == null ? void 0 : elements.surnameKana.value) || "").trim();
+      const givenKana = ((elements.givenNameKana == null ? void 0 : elements.givenNameKana.value) || "").trim();
+      if (elements.name) elements.name.value = [surname, given].filter(Boolean).join(" ");
+      if (elements.kana) elements.kana.value = [surnameKana, givenKana].filter(Boolean).join(" ");
+    }
     function updateAge() {
       var _a2, _b2, _c2;
+      syncDerivedNameFields();
       syncBirthValue();
       const age = calcAge(((_a2 = elements.birth) == null ? void 0 : _a2.value) || "");
       const isMinor = age !== null && age < 18;
@@ -486,6 +515,9 @@
       if (monthDiff < 0 || monthDiff === 0 && now.getDate() < birth.getDate()) age -= 1;
       return age;
     }
+    function scopeContains(scope, el) {
+      return Boolean(scope && el && scope.contains(el));
+    }
     function updateProcedureSlots(index) {
       const dateInput = $("#procedureDate".concat(index));
       const timeSelect = $("#procedureTime".concat(index));
@@ -523,10 +555,10 @@
       if (scope.querySelector('[id^="procedureDate"]')) {
         validateProcedureDates(messages, invalids, scope);
       }
-      if (scope.contains(elements.birthYear) || scope.contains(elements.birth)) {
+      if (scopeContains(scope, elements.birthYear) || scopeContains(scope, elements.birth)) {
         syncBirthValue();
       }
-      if ((scope.contains(elements.birthYear) || scope.contains(elements.birth)) && ((_c2 = elements.birth) == null ? void 0 : _c2.value)) {
+      if ((scopeContains(scope, elements.birthYear) || scopeContains(scope, elements.birth)) && ((_c2 = elements.birth) == null ? void 0 : _c2.value)) {
         const age = calcAge(elements.birth.value);
         if (elements.birth.value > TODAY) {
           addInvalid(elements.birthDay || elements.birth, "\u751F\u5E74\u6708\u65E5\u306B\u672A\u6765\u306E\u65E5\u4ED8\u306F\u6307\u5B9A\u3067\u304D\u307E\u305B\u3093\u3002", messages, invalids);
@@ -534,10 +566,11 @@
           addInvalid(elements.birthDay || elements.birth, "15\u6B73\u672A\u6E80\u304A\u3088\u3073\u4E2D\u5B66\u751F\u4EE5\u4E0B\u306E\u65B9\u306F\u5165\u4F1A\u3067\u304D\u307E\u305B\u3093\u3002", messages, invalids);
         }
       }
-      const kana = $("#kana");
-      if (scope.contains(kana) && (kana == null ? void 0 : kana.value) && !/^[\u30a0-\u30ff\u3000\s]+$/u.test(kana.value.trim())) {
-        addInvalid(kana, "\u30D5\u30EA\u30AC\u30CA\u306F\u5168\u89D2\u30AB\u30BF\u30AB\u30CA\u3067\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002", messages, invalids);
-      }
+      [elements.surnameKana, elements.givenNameKana].forEach((kanaEl) => {
+        if (scopeContains(scope, kanaEl) && (kanaEl == null ? void 0 : kanaEl.value) && !/^[\u30a0-\u30ff\u3000\s]+$/u.test(kanaEl.value.trim())) {
+          addInvalid(kanaEl, "\u30BB\u30A4\u30FB\u30E1\u30A4\u306F\u5168\u89D2\u30AB\u30BF\u30AB\u30CA\u3067\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002", messages, invalids);
+        }
+      });
       const email = $("#email");
       if (scope.contains(email) && (email == null ? void 0 : email.value) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
         addInvalid(email, "\u30E1\u30FC\u30EB\u30A2\u30C9\u30EC\u30B9\u306E\u5F62\u5F0F\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002", messages, invalids);

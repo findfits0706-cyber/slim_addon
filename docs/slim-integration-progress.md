@@ -30,16 +30,16 @@ Status legend:
 
 | Item | Status |
 |---|---|
-| Confirm existing PHP files and routes | Ready: PHP repo copied; detailed review still needed |
-| Remove JSON as production storage | Not started |
-| Implement server fee service | Not started |
-| Update public form fields | Not started |
-| Implement MySQL migrations and repository | Not started |
-| Implement idempotent submit | Not started |
-| Implement photo protected storage | Not started |
-| Add JSON import dry-run CLI | Not started |
-| Update admin admissions compatibility | Not started |
-| Add automated tests | Not started |
+| Confirm existing PHP files and routes | Done |
+| Remove JSON as production storage | Done |
+| Implement server fee service | Done |
+| Update public form fields | Done |
+| Implement MySQL migrations and repository | Done |
+| Implement idempotent submit | Done |
+| Implement photo protected storage | Done |
+| Add JSON import dry-run CLI | Done |
+| Update admin admissions compatibility | Done |
+| Add automated tests | Done |
 
 ### Phase 2: Admin UI and Operation Queue
 
@@ -115,16 +115,59 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-checks.ps1
 Last result in this workspace:
 
 - Passed.
-- `config/findpilates.example.php` had no PHP syntax errors.
+- PHP syntax checks passed.
+- `tests/trial_schedule_unit.php` passed.
+- `tests/admission_fee_unit.php` passed.
+- `scripts/import-admissions-json.php --source=tests/fixtures/admission_legacy_sample.json` dry-run passed.
 - `php.exe` execution required elevated tool permission because the sandbox denied it.
 
 Current expected behavior:
 
 - verifies foundation files exist
 - syntax-checks PHP files if PHP is installed
-- safely reports when the application repository is not present
+- runs imported trial schedule unit checks
+- runs Prompt 1 admission fee and validation unit checks
+- runs legacy admission JSON import dry-run with an anonymous fixture
 
-No production application test can run until `public_html/` and related files are added.
+DB-backed admission save/list behavior still needs a safe local or staging MySQL database with the Prompt 1 migration applied.
+
+## Prompt 1: Public Form, Fee Engine, MySQL Persistence
+
+Implemented in this workspace:
+
+- Public admission form now collects split surname/given name, split kana, birth date, gender, `phone_type`, and split address fields.
+- Public initial-visit selection was removed; PHP recalculates Pilates first-month fee and visit count from `start_date`.
+- Confirm/send paths recalculate fees server-side and ignore posted fee or visit values.
+- `admission/tmp/admissions.json` is no longer used as the production admission store.
+- `public_html/admission/inc/repository.php` stores admissions, sensitive health/terms payloads, procedure preferences, and photo metadata in MySQL.
+- `send.php` saves the DB record before mail send, records mail status afterwards, and treats mail failure as saved-but-warning.
+- Duplicate submits use a session idempotency key and return the existing admission record.
+- Photos are stored under `storage/admission_photos/` and are ignored by Git.
+- `scripts/import-admissions-json.php` provides dry-run by default and `--commit` import using `legacy-json-<application_id>` idempotency keys.
+- `public_html/admin/admissions.php` can list and edit MySQL-backed admission records through the existing admin UI.
+- `public_html/admin/dashboard.php` counts new admissions from MySQL when the `admissions` table exists.
+
+Migration:
+
+- Apply `database/migrations/20260626_admissions_mysql.sql`.
+- The migration intentionally does not add foreign keys, matching the existing schema style; the repository refreshes child rows inside one DB transaction.
+- Rollback before production use should be DB-backup based. For a schema-only rollback, drop `admission_photos`, `admission_preferences`, `admission_sensitive`, then `admissions` after exporting any needed data.
+
+Fee examples covered by tests:
+
+- Basic standalone start day 1/8/15/22: 8,800 / 6,600 / 4,400 / 2,200.
+- Double standalone start day 1/8/15/22: 12,650 / 9,488 / 6,325 / 3,163.
+- Addon basic start day 8/22: 2,888 / 963.
+- Addon double start day 8: 5,775.
+- Existing main-gym member addon has main-gym first-month fee 0.
+- Simultaneous main-gym admission keeps main-gym daily proration as a separate component.
+
+Human review still recommended:
+
+- Public admission form on smartphone and desktop.
+- Admin admissions list/edit screen after applying the migration to a safe DB.
+- One complete anonymous submission in staging, including mail failure behavior and photo metadata.
+- Campaign wording on public landing content, because Prompt 1 disables campaign auto-application in the form config.
 
 ## Prompt 1 Start Conditions
 
