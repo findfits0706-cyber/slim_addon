@@ -97,4 +97,26 @@ if ((Test-Path -LiteralPath $importScript) -and (Test-Path -LiteralPath $legacyF
     }
 }
 
+$node = Get-Command node -ErrorAction SilentlyContinue
+$edgeTestScript = Join-Path $root 'edge-extension/tests/run-tests.mjs'
+if ((Test-Path -LiteralPath $edgeTestScript) -and $null -ne $node) {
+    Write-Host 'Running Edge extension JavaScript syntax checks...'
+    $edgeRoot = Join-Path $root 'edge-extension'
+    $edgeJsFiles = @(Get-ChildItem -LiteralPath $edgeRoot -Recurse -File -Filter '*.js')
+    foreach ($file in $edgeJsFiles) {
+        & node --check $file.FullName
+        if ($LASTEXITCODE -ne 0) {
+            throw "Edge extension JavaScript syntax check failed: $($file.FullName)"
+        }
+    }
+
+    Write-Host 'Running Edge extension unit tests...'
+    & node $edgeTestScript
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Edge extension unit tests failed.'
+    }
+} elseif ((Test-Path -LiteralPath $edgeTestScript) -and $Strict) {
+    throw 'Node is not available on PATH; cannot run Edge extension unit tests.'
+}
+
 Write-Host 'All checks passed.'

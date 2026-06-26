@@ -1,6 +1,6 @@
 # Find Pilates x SLIM SNG Integration Spec
 
-Status: Prompt 3 extension API and short-lived token foundation. This document is the working source of truth until saved SLIM HTML, the Edge extension, and a safe DB-backed test environment are added.
+Status: Prompt 4 Edge extension foundation and SLIM analysis mode. This document is the working source of truth until saved SLIM HTML, screen-level transfer, and a safe DB-backed test environment are added.
 
 ## Purpose
 
@@ -247,6 +247,8 @@ Saved HTML fixtures are not present in this workspace yet, so stable IDs, headin
 
 The detector must inspect iframes in the real screen even when saved HTML does not contain an iframe.
 
+Prompt 4 implements the detector in `edge-extension/core/page-detector.js` and uses the side panel to inject a sanitized inspector into the active SLIM tab. The detector returns `unknown` when the URL path and visible title/headings conflict.
+
 ## Selector Policy
 
 Stable selectors may use:
@@ -311,6 +313,16 @@ Initial version:
 - no automatic login
 - no automatic final submit
 - no guessed member number generation
+
+Prompt 4 extension behavior:
+
+- side panel pairing and admission selection
+- active API lock and heartbeat after selection
+- page detection and SLIM login detection
+- sanitized inspection JSON copy/save
+- dry-run planning only
+- no DOM value writes
+- no registration-button clicks
 
 Future version may add automatic navigation and submit only after:
 

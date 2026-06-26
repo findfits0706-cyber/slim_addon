@@ -20,6 +20,7 @@ The check currently:
 - runs `tests/admission_fee_unit.php`
 - runs `tests/slim_operations_unit.php`
 - runs `tests/extension_api_unit.php`
+- runs `edge-extension/tests/run-tests.mjs` when Node is available
 - runs the legacy admission JSON import command in dry-run mode with `tests/fixtures/admission_legacy_sample.json`
 
 Individual checks:
@@ -29,6 +30,7 @@ php .\tests\trial_schedule_unit.php
 php .\tests\admission_fee_unit.php
 php .\tests\slim_operations_unit.php
 php .\tests\extension_api_unit.php
+node .\edge-extension\tests\run-tests.mjs
 php .\scripts\import-admissions-json.php --source=.\tests\fixtures\admission_legacy_sample.json
 ```
 

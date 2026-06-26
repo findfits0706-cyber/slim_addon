@@ -67,11 +67,11 @@ Status legend:
 
 | Item | Status |
 |---|---|
-| Edge manifest and side panel | Not started |
-| Pairing UI | Not started |
-| Application selection and fixed target | Not started |
-| Page detector | Waiting real screen |
-| DOM analysis JSON output | Waiting real screen |
+| Edge manifest and side panel | Done |
+| Pairing UI | Done |
+| Application selection and fixed target | Done |
+| Page detector | Done |
+| DOM analysis JSON output | Done |
 | Anonymous fixture tests | Waiting real screen |
 
 ### Phase 5: Screen-Level Transfer
@@ -120,6 +120,7 @@ Last result in this workspace:
 - `tests/admission_fee_unit.php` passed.
 - `tests/slim_operations_unit.php` passed.
 - `tests/extension_api_unit.php` passed.
+- `edge-extension/tests/run-tests.mjs` passed.
 - `scripts/import-admissions-json.php --source=tests/fixtures/admission_legacy_sample.json` dry-run passed.
 - `php.exe` execution required elevated tool permission because the sandbox denied it.
 
@@ -131,9 +132,37 @@ Current expected behavior:
 - runs Prompt 1 admission fee and validation unit checks
 - runs Prompt 2 SLIM operation generation and readiness unit checks
 - runs Prompt 3 extension API response-safety unit checks
+- runs Prompt 4 Edge extension page-detector, sanitizer, and dry-run checks when Node is available
 - runs legacy admission JSON import dry-run with an anonymous fixture
 
 DB-backed admission save/list, SLIM operation persistence, and live extension endpoint behavior still need a safe local or staging MySQL database with the Prompt 1, Prompt 2, and Prompt 3 migrations applied.
+
+## Prompt 4: Edge Extension Foundation and SLIM Analysis
+
+Implemented in this workspace:
+
+- `edge-extension/manifest.json` defines a Manifest V3 Edge extension with `sidePanel`, `scripting`, `storage`, and `tabs`.
+- Host permissions are limited to `https://www.slim-sng.jp/*` and `https://findpilates.jp/*`; `<all_urls>` is not used.
+- The side panel supports pairing, token expiry handling, admission list tabs, search, selected-admission lock, heartbeat, and target release.
+- Access tokens are stored in `chrome.storage.session`; only `installation_id` and API base URL are stored in local storage.
+- Selected transfer details are not persisted; the panel fetches them from the API when needed.
+- SLIM page detection covers `login`, `admission_procedure`, `view_basic_user`, `view_image_survey`, `addition_notification`, and `unknown`.
+- URL and title/heading conflicts become `unknown`.
+- The inspection mode collects sanitized metadata for frames and controls while excluding values, passwords, hidden tokens, cookies, build hashes, and page HTML.
+- Inspection JSON can be copied or saved from the panel without the `downloads` permission.
+- Dry-run compares the selected operation and current page, then reports `ready`, `warning`, or `blocked` without writing to the DOM.
+- `edge-extension/tests/run-tests.mjs` covers page detection, sanitizer safety, file input context, and dry-run blockers.
+
+Docs:
+
+- `edge-extension/README.md` describes loading the unpacked extension, permissions, pairing, inspection, dry-run, and tests.
+
+Human review still recommended:
+
+- Load `edge-extension/` from `edge://extensions` in Microsoft Edge.
+- Pair against a staging API with anonymous admissions.
+- Open the real SLIM pages and confirm page detection and inspection summaries.
+- Provide saved, anonymized SLIM HTML so `edge-extension/tests/fixtures/` can be populated.
 
 ## Prompt 3: Extension API and Short-Lived Auth
 

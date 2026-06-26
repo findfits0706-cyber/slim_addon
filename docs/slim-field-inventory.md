@@ -1,8 +1,10 @@
 # SLIM Field Inventory
 
-Status: no saved SLIM HTML fixtures are present in this workspace. This inventory records confirmed target pages from the provided design and leaves field-level selectors unresolved until HTML is available.
+Status: Prompt 4 adds a sanitized SLIM inspection mode, but no saved SLIM HTML fixtures are present in this workspace. This inventory records confirmed target pages from the provided design and leaves field-level selectors unresolved until HTML is available.
 
 Do not fill unresolved fields by guessing. Do not use generated `data-v-*` attributes as stable selectors.
+
+Use `edge-extension/` to inspect the real SLIM page and export sanitized JSON before promoting any field selector from unverified to verified.
 
 ## Target Pages
 

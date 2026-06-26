@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Find Pilates SLIM Assistant",
+  "version": "0.1.0",
+  "description": "Assisted SLIM SNG transfer side panel for Find Pilates admissions. Prompt 4 dry-run only.",
+  "permissions": [
+    "sidePanel",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.slim-sng.jp/*",
+    "https://findpilates.jp/*"
+  ],
+  "action": {
+    "default_title": "Find Pilates SLIM"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  }
+}
