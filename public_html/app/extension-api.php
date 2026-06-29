@@ -607,7 +607,12 @@ function extension_list_admissions(array $query): array
     } elseif ($scope === 'search') {
         $q = trim((string)($query['q'] ?? ''));
         if ($q === '') {
-            extension_fail(400, 'search_query_required', 'q is required when scope=search.');
+            return [
+                'scope' => $scope,
+                'page' => $page,
+                'items' => [],
+                'has_more' => false,
+            ];
         }
         $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
         $searchColumns = ['application_id', 'surname', 'given_name', 'surname_kana', 'given_name_kana', 'phone'];

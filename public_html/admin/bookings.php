@@ -229,7 +229,7 @@ render_admin_header('体験申込一覧');
       <a class="button-link button-link--muted" href="<?= h(base_path('/admin/bookings.php?quick=overdue')) ?>">予約日超過</a>
     </div>
   </div>
-  <form method="get" class="filters-grid">
+  <form method="get" class="filters-grid" action="<?= h(base_path('/admin/bookings.php')) ?>" data-prune-empty-get>
     <label>ステータス
       <select name="status">
         <option value="">すべて</option>

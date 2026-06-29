@@ -141,6 +141,10 @@ function renderTabs() {
 }
 
 function renderAdmissionList() {
+  if (state.scope === 'search' && state.searchQuery.trim() === '') {
+    return '<div class="message">検索語を入力して検索してください。</div>';
+  }
+
   if (state.admissions.length === 0) {
     return '<div class="message">表示できる申込はありません。</div>';
   }
@@ -381,9 +385,14 @@ async function loadMeAndAdmissions() {
 }
 
 async function loadAdmissions() {
+  if (state.scope === 'search' && state.searchQuery.trim() === '') {
+    state.admissions = [];
+    return;
+  }
+
   const response = await apiClient().admissions({
     scope: state.scope,
-    q: state.scope === 'search' ? state.searchQuery : '',
+    q: state.scope === 'search' ? state.searchQuery.trim() : '',
     page: 1,
     limit: 25
   });
@@ -589,7 +598,7 @@ app.addEventListener('submit', (event) => {
     void withLoading(() => pair(form));
   }
   if (action === 'search') {
-    state.searchQuery = String(new FormData(form).get('q') || '');
+    state.searchQuery = String(new FormData(form).get('q') || '').trim();
     void withLoading(loadAdmissions);
   }
 });
@@ -602,6 +611,12 @@ app.addEventListener('click', (event) => {
   const action = button.dataset.action;
   if (action === 'scope') {
     state.scope = button.dataset.scope || 'unregistered';
+    if (state.scope === 'search' && state.searchQuery.trim() === '') {
+      state.admissions = [];
+      setMessage('', '');
+      render();
+      return;
+    }
     void withLoading(loadAdmissions);
   }
   if (action === 'select') {

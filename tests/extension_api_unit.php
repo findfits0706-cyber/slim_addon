@@ -61,6 +61,11 @@ assert_true_value(isset($listItem['application_id'], $listItem['submitted_at'], 
 assert_false_value(str_contains((string)$listJson, 'Secret'), 'list excludes name');
 assert_false_value(str_contains((string)$listJson, '09000000000'), 'list excludes phone');
 
+$emptySearch = extension_list_admissions(['scope' => 'search', 'q' => '']);
+assert_same_value('search', $emptySearch['scope'], 'empty search keeps scope');
+assert_same_value([], $emptySearch['items'], 'empty search returns no items');
+assert_false_value($emptySearch['has_more'], 'empty search has no next page');
+
 $transfer = extension_transfer_payload([
     'id' => 'adm_test_001',
     'created_at' => '2026-07-01 10:00:00',

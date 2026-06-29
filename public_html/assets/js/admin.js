@@ -351,6 +351,16 @@
     });
   });
 
+  document.querySelectorAll('[data-prune-empty-get]').forEach((targetForm) => {
+    targetForm.addEventListener('submit', () => {
+      targetForm.querySelectorAll('input[name], select[name], textarea[name]').forEach((field) => {
+        if (!field.disabled && String(field.value || '').trim() === '') {
+          field.disabled = true;
+        }
+      });
+    });
+  });
+
   document.querySelectorAll('form').forEach((targetForm) => {
     targetForm.addEventListener('submit', (event) => {
       const method = (targetForm.getAttribute('method') || 'get').toLowerCase();
