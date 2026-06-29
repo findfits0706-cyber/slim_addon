@@ -37,6 +37,12 @@ assert_true_value(str_starts_with($token, 'fpslim_'), 'token prefix');
 assert_true_value(extension_photo_token_is_safe($token), 'photo token accepts generated token');
 assert_false_value(extension_photo_token_is_safe('../' . $token), 'photo token rejects path traversal');
 
+$_SERVER['HTTP_AUTHORIZATION'] = '';
+$_SERVER['REDIRECT_HTTP_AUTHORIZATION'] = '';
+$_SERVER['HTTP_X_EXTENSION_ACCESS_TOKEN'] = $token;
+assert_same_value($token, extension_bearer_token(), 'token fallback header');
+unset($_SERVER['HTTP_X_EXTENSION_ACCESS_TOKEN'], $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+
 assert_same_value('...12345678', extension_mask_installation_id('installation-12345678'), 'installation masking');
 assert_true_value(extension_validate_member_number('FP-12345'), 'member number valid');
 assert_false_value(extension_validate_member_number('FP 12345'), 'member number rejects spaces');

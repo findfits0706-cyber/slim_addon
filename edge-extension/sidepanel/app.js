@@ -344,16 +344,16 @@ async function withLoading(task) {
   try {
     await task();
   } catch (error) {
-    handleError(error);
+    await handleError(error);
   } finally {
     state.loading = false;
     render();
   }
 }
 
-function handleError(error) {
+async function handleError(error) {
   if (error instanceof ApiError && error.status === 401) {
-    void clearSensitiveState();
+    await clearSensitiveState();
     setMessage('API tokenが期限切れまたは失効しました。再ペアリングしてください。', 'error');
     return;
   }
@@ -646,7 +646,7 @@ async function init() {
         startHeartbeat();
       }
     } catch (error) {
-      handleError(error);
+      await handleError(error);
     }
   }
   render();

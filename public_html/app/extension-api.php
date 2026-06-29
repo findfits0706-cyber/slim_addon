@@ -117,7 +117,7 @@ function extension_send_base_headers(): void
     if ($origin !== '' && is_array($allowedOrigins) && in_array($origin, $allowedOrigins, true)) {
         header('Access-Control-Allow-Origin: ' . $origin);
         header('Vary: Origin');
-        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Request-ID, X-Extension-Installation-Id');
+        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Request-ID, X-Extension-Access-Token, X-Extension-Installation-Id');
         header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
     }
 }
@@ -501,6 +501,11 @@ function extension_bearer_token(): string
     $header = (string)($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
     if (preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
         return trim($matches[1]);
+    }
+
+    $fallback = trim((string)($_SERVER['HTTP_X_EXTENSION_ACCESS_TOKEN'] ?? ''));
+    if ($fallback !== '') {
+        return $fallback;
     }
 
     return '';

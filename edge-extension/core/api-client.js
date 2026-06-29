@@ -53,6 +53,7 @@ export class ExtensionApiClient {
     }
     if (auth) {
       headers.Authorization = 'Bearer ' + this.accessToken;
+      headers['X-Extension-Access-Token'] = this.accessToken;
       headers['X-Extension-Installation-Id'] = this.installationId;
     }
 
