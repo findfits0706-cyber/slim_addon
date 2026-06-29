@@ -217,12 +217,16 @@ function initial_visit_options(array $config, int $monthlyVisits): array
     return array_map('intval', $config['initial_visit_options'][$monthlyVisits] ?? [$monthlyVisits]);
 }
 
-function normalize_initial_visits(array $config, int $monthlyVisits, string|int|null $postedVisits): int
+function normalize_initial_visits(array $config, int $monthlyVisits, string|int|null $postedVisits, ?int $defaultVisits = null): int
 {
     $options = initial_visit_options($config, $monthlyVisits);
     $visits = (int)$postedVisits;
     if (in_array($visits, $options, true)) {
         return $visits;
+    }
+
+    if ($defaultVisits !== null && in_array($defaultVisits, $options, true)) {
+        return $defaultVisits;
     }
 
     return (int)max($options);
@@ -714,8 +718,8 @@ function calculate_fees(array $config, array $data): array
             $addonFee = (int)$addon['add_fee'];
             $monthlyVisits = (int)$addon['monthly_visits'];
             $proration = admission_start_week_proration($startDate, $monthlyVisits);
-            $initialVisits = (int)$proration['visits'];
-            $addonInitialFee = calculate_pilates_initial_fee($addonFee, $startDate);
+            $initialVisits = normalize_initial_visits($config, $monthlyVisits, $data['initial_visits'] ?? null, (int)$proration['visits']);
+            $addonInitialFee = calculate_initial_fee_by_visits($addonFee, $monthlyVisits, $initialVisits);
         }
 
         $pilatesMonthlyFee = $addonFee;
@@ -731,8 +735,8 @@ function calculate_fees(array $config, array $data): array
             $monthlyVisits = (int)$course['monthly_visits'];
             $pilatesMonthlyFee = (int)$course['monthly_fee'];
             $proration = admission_start_week_proration($startDate, $monthlyVisits);
-            $initialVisits = (int)$proration['visits'];
-            $pilatesInitialFee = calculate_pilates_initial_fee($pilatesMonthlyFee, $startDate);
+            $initialVisits = normalize_initial_visits($config, $monthlyVisits, $data['initial_visits'] ?? null, (int)$proration['visits']);
+            $pilatesInitialFee = calculate_initial_fee_by_visits($pilatesMonthlyFee, $monthlyVisits, $initialVisits);
             $monthlyFee = $pilatesMonthlyFee;
         }
     }

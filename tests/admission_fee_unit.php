@@ -68,6 +68,22 @@ foreach ($cases as [$label, $data, $expectedFee, $expectedVisits]) {
     assert_same_value($expectedVisits, (int)$fees['initial_visits'], $label . ' visits');
 }
 
+$selectedBasicVisits = calculate_fees($config, base_data([
+    'course' => 'basic',
+    'start_date' => '2026-07-01',
+    'initial_visits' => '4',
+]));
+assert_same_value(4, (int)$selectedBasicVisits['initial_visits'], 'selected basic visits are used');
+assert_same_value(4400, (int)$selectedBasicVisits['pilates_current_month_fee'], 'selected basic visits fee');
+
+$selectedDoubleVisits = calculate_fees($config, base_data([
+    'course' => 'double',
+    'start_date' => '2026-07-01',
+    'initial_visits' => '4',
+]));
+assert_same_value(4, (int)$selectedDoubleVisits['initial_visits'], 'selected double visits are used');
+assert_same_value(3163, (int)$selectedDoubleVisits['pilates_current_month_fee'], 'selected double visits fee');
+
 $existingMain = calculate_fees($config, base_data([
     'use_type' => 'add',
     'main_member_status' => 'existing',

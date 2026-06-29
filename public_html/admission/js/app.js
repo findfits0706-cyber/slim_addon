@@ -96,6 +96,11 @@
       return $('input[name="'.concat(cssEscape(name), '"]:checked'), form);
     }
     function initialVisitChoices(monthlyVisits) {
+      const configured = CONFIG.initialVisitOptions || {};
+      const options = configured[String(monthlyVisits)] || configured[monthlyVisits];
+      if (Array.isArray(options) && options.length) {
+        return options.map((value) => Number(value)).filter((value) => value > 0);
+      }
       if (Number(monthlyVisits) === 16) return [4, 8, 12, 16];
       return [2, 4, 6, 8];
     }
@@ -110,6 +115,12 @@
       var _a2;
       return Number(((_a2 = elements.initialVisits) == null ? void 0 : _a2.value) || 0);
     }
+    function normalizeInitialVisits(monthlyVisits, selectedVisits, defaultVisits) {
+      const options = initialVisitChoices(monthlyVisits);
+      if (options.includes(Number(selectedVisits))) return Number(selectedVisits);
+      if (options.includes(Number(defaultVisits))) return Number(defaultVisits);
+      return Number(options[options.length - 1] || monthlyVisits || 0);
+    }
     function weeklyProration(startDate, monthlyVisits) {
       const date = parseDate(startDate || "");
       if (!date || !monthlyVisits) return { ratio: 0, visits: 0 };
@@ -119,10 +130,9 @@
       if (day <= 21) return { ratio: 0.5, visits: Math.round(Number(monthlyVisits) * 0.5) };
       return { ratio: 0.25, visits: Math.round(Number(monthlyVisits) * 0.25) };
     }
-    function calcPilatesInitialFee(monthlyFee, startDate) {
-      const proration = weeklyProration(startDate, 8);
-      if (!monthlyFee || !proration.ratio) return 0;
-      return Math.round(Number(monthlyFee) * proration.ratio);
+    function calcPilatesInitialFee(monthlyFee, monthlyVisits, initialVisits) {
+      if (!monthlyFee || !monthlyVisits || !initialVisits) return 0;
+      return Math.round(Number(monthlyFee) * (Number(initialVisits) / Number(monthlyVisits)));
     }
     function proratedMonthlyFee(monthlyFee, startDate) {
       var date = parseDate(startDate || "");
@@ -265,9 +275,11 @@
       if (!elements.initialVisits) return;
       const monthlyVisits = currentMonthlyVisits();
       const proration = weeklyProration((elements.startDate == null ? void 0 : elements.startDate.value) || "", monthlyVisits);
-      const visits = proration.visits || monthlyVisits;
+      const options = initialVisitChoices(monthlyVisits);
+      const currentValue = selectedInitialVisits();
+      const visits = normalizeInitialVisits(monthlyVisits, currentValue, proration.visits || monthlyVisits);
       if (elements.initialVisits.tagName === "SELECT") {
-        elements.initialVisits.innerHTML = '<option value="'.concat(visits, '">').concat(visits, "\u56DE</option>");
+        elements.initialVisits.innerHTML = options.map((option) => '<option value="'.concat(option, '">').concat(option, "\u56DE</option>")).join("");
       }
       elements.initialVisits.value = String(visits);
     }
@@ -295,8 +307,8 @@
         addonFee = Number((addon == null ? void 0 : addon.dataset.fee) || 0);
         monthlyVisits = Number((addon == null ? void 0 : addon.dataset.visits) || 0);
         const proration = weeklyProration((elements.startDate == null ? void 0 : elements.startDate.value) || "", monthlyVisits);
-        initialVisits = proration.visits || monthlyVisits;
-        addonInitialFee = calcPilatesInitialFee(addonFee, (elements.startDate == null ? void 0 : elements.startDate.value) || "");
+        initialVisits = normalizeInitialVisits(monthlyVisits, selectedInitialVisits(), proration.visits || monthlyVisits);
+        addonInitialFee = calcPilatesInitialFee(addonFee, monthlyVisits, initialVisits);
         pilatesMonthlyFee = addonFee;
         monthlyFee = baseMonthlyFee + addonFee;
         label = "".concat(mainLabel, " \uFF0B ").concat(addonLabel);
@@ -308,8 +320,8 @@
         monthlyVisits = Number((course == null ? void 0 : course.dataset.visits) || 0);
         pilatesMonthlyFee = Number((course == null ? void 0 : course.dataset.fee) || 0);
         const proration = weeklyProration((elements.startDate == null ? void 0 : elements.startDate.value) || "", monthlyVisits);
-        initialVisits = proration.visits || monthlyVisits;
-        pilatesInitialFee = calcPilatesInitialFee(pilatesMonthlyFee, (elements.startDate == null ? void 0 : elements.startDate.value) || "");
+        initialVisits = normalizeInitialVisits(monthlyVisits, selectedInitialVisits(), proration.visits || monthlyVisits);
+        pilatesInitialFee = calcPilatesInitialFee(pilatesMonthlyFee, monthlyVisits, initialVisits);
         monthlyFee = pilatesMonthlyFee;
       }
       const activeCampaigns = (Array.isArray(CONFIG.campaigns) ? CONFIG.campaigns : []).filter(isCampaignActive);

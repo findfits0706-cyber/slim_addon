@@ -175,6 +175,15 @@ $mainCategories = $config['main_club_categories'];
                 <input id="startDate" name="start_date" type="date" min="<?= h($selectableStartDate) ?>" value="<?= h($selectableStartDate) ?>" required>
               </div>
               <div>
+                <label class="req" for="initialVisits">初月利用回数</label>
+                <select id="initialVisits" name="initial_visits" required>
+                  <?php foreach ($config['initial_visit_options'][8] as $visits): ?>
+                    <option value="<?= h((string)$visits) ?>"><?= h((string)$visits) ?>回</option>
+                  <?php endforeach; ?>
+                </select>
+                <p class="field-note">利用開始日に応じた推奨回数を初期表示します。必要に応じて変更できます。</p>
+              </div>
+              <div>
                 <label for="campaignCode">紹介・キャンペーンコード（任意）</label>
                 <input id="campaignCode" name="campaign_code" autocomplete="off">
               </div>
