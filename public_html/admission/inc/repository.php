@@ -29,8 +29,44 @@ function admission_repository_ready(): bool
     return db_table_exists_cached('admissions');
 }
 
+function admission_split_legacy_person_name(string $name): array
+{
+    $name = trim(preg_replace('/[\s　]+/u', ' ', $name) ?? $name);
+    if ($name === '') {
+        return ['', ''];
+    }
+
+    $parts = explode(' ', $name, 2);
+    return [$parts[0] ?? '', $parts[1] ?? ''];
+}
+
 function admission_normalized_payload(array $data): array
 {
+    $surname = trim((string)($data['surname'] ?? ''));
+    $givenName = trim((string)($data['given_name'] ?? ''));
+    $surnameKana = trim((string)($data['surname_kana'] ?? ''));
+    $givenNameKana = trim((string)($data['given_name_kana'] ?? ''));
+    $legacyName = trim((string)($data['name'] ?? ''));
+    $legacyKana = trim((string)($data['kana'] ?? ''));
+
+    if (($surname === '' || $givenName === '') && $legacyName !== '') {
+        [$derivedSurname, $derivedGivenName] = admission_split_legacy_person_name($legacyName);
+        $surname = $surname !== '' ? $surname : $derivedSurname;
+        $givenName = $givenName !== '' ? $givenName : $derivedGivenName;
+    }
+
+    if (($surnameKana === '' || $givenNameKana === '') && $legacyKana !== '') {
+        [$derivedSurnameKana, $derivedGivenNameKana] = admission_split_legacy_person_name($legacyKana);
+        $surnameKana = $surnameKana !== '' ? $surnameKana : $derivedSurnameKana;
+        $givenNameKana = $givenNameKana !== '' ? $givenNameKana : $derivedGivenNameKana;
+    }
+
+    $phone = trim((string)($data['phone'] ?? ''));
+    $phoneType = trim((string)($data['phone_type'] ?? ''));
+    if ($phone !== '' && $phoneType === '') {
+        $phoneType = 'mobile';
+    }
+
     return [
         'use_type' => (string)($data['use_type'] ?? 'new'),
         'course' => (string)($data['course'] ?? ''),
@@ -41,14 +77,14 @@ function admission_normalized_payload(array $data): array
         'start_date' => (string)($data['start_date'] ?? ''),
         'main_membership' => (string)($data['main_membership'] ?? ''),
         'addon' => (string)($data['addon'] ?? ''),
-        'surname' => (string)($data['surname'] ?? ''),
-        'given_name' => (string)($data['given_name'] ?? ''),
-        'surname_kana' => (string)($data['surname_kana'] ?? ''),
-        'given_name_kana' => (string)($data['given_name_kana'] ?? ''),
+        'surname' => $surname,
+        'given_name' => $givenName,
+        'surname_kana' => $surnameKana,
+        'given_name_kana' => $givenNameKana,
         'birth' => (string)($data['birth'] ?? ''),
         'gender' => (string)($data['gender'] ?? ''),
-        'phone_type' => (string)($data['phone_type'] ?? ''),
-        'phone' => (string)($data['phone'] ?? ''),
+        'phone_type' => $phoneType,
+        'phone' => $phone,
         'email' => (string)($data['email'] ?? ''),
         'postal_code' => (string)($data['postal_code'] ?? ''),
         'prefecture' => (string)($data['prefecture'] ?? ''),
@@ -59,8 +95,8 @@ function admission_normalized_payload(array $data): array
         'emergency_relationship' => (string)($data['emergency_relationship'] ?? ''),
         'emergency_phone' => (string)($data['emergency_phone'] ?? ''),
         'guardian_name' => (string)($data['guardian_name'] ?? ''),
-        'name' => (string)($data['name'] ?? trim((string)($data['surname'] ?? '') . ' ' . (string)($data['given_name'] ?? ''))),
-        'kana' => (string)($data['kana'] ?? trim((string)($data['surname_kana'] ?? '') . ' ' . (string)($data['given_name_kana'] ?? ''))),
+        'name' => (string)($data['name'] ?? trim($surname . ' ' . $givenName)),
+        'kana' => (string)($data['kana'] ?? trim($surnameKana . ' ' . $givenNameKana)),
     ];
 }
 

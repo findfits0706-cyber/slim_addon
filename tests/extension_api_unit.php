@@ -61,6 +61,17 @@ assert_true_value(isset($listItem['application_id'], $listItem['submitted_at'], 
 assert_false_value(str_contains((string)$listJson, 'Secret'), 'list excludes name');
 assert_false_value(str_contains((string)$listJson, '09000000000'), 'list excludes phone');
 
+$legacyNormalized = admission_normalized_payload([
+    'name' => 'Sample User',
+    'kana' => 'SAMPLE USER',
+    'phone' => '09000000000',
+]);
+assert_same_value('Sample', $legacyNormalized['surname'], 'legacy name derives surname');
+assert_same_value('User', $legacyNormalized['given_name'], 'legacy name derives given name');
+assert_same_value('SAMPLE', $legacyNormalized['surname_kana'], 'legacy kana derives surname kana');
+assert_same_value('USER', $legacyNormalized['given_name_kana'], 'legacy kana derives given name kana');
+assert_same_value('mobile', $legacyNormalized['phone_type'], 'legacy phone defaults to mobile type');
+
 $emptySearch = extension_list_admissions(['scope' => 'search', 'q' => '']);
 assert_same_value('search', $emptySearch['scope'], 'empty search keeps scope');
 assert_same_value([], $emptySearch['items'], 'empty search returns no items');
