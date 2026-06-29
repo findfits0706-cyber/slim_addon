@@ -318,8 +318,8 @@
       const pilatesCurrentMonthFee = pilatesInitialFee + addonInitialFee;
       const currentMonthFee = mainClubInitialFee + pilatesCurrentMonthFee;
       const nextMonthFee = pilatesMonthlyFee;
-      const usesSplitCurrentMonth = useType === "add" && (campaignUsesComponent(activeCampaigns, "main_club_current_month_fee", planKey) || campaignUsesComponent(activeCampaigns, "pilates_current_month_fee", planKey));
-      const usesSplitNextMonth = useType === "add" && (campaignUsesComponent(activeCampaigns, "main_club_next_month_fee", planKey) || campaignUsesComponent(activeCampaigns, "pilates_next_month_fee", planKey));
+      const usesSplitCurrentMonth = campaignUsesComponent(activeCampaigns, "pilates_current_month_fee", planKey) || useType === "add" && campaignUsesComponent(activeCampaigns, "main_club_current_month_fee", planKey);
+      const usesSplitNextMonth = campaignUsesComponent(activeCampaigns, "pilates_next_month_fee", planKey) || useType === "add" && campaignUsesComponent(activeCampaigns, "main_club_next_month_fee", planKey);
       const components = {
         join_fee: joinFee,
         processing_fee: processingFee

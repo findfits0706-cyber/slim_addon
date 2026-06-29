@@ -742,14 +742,10 @@ function calculate_fees(array $config, array $data): array
     $pilatesCurrentMonthFee = $pilatesInitialFee + $addonInitialFee;
     $currentMonthFee = $mainClubInitialFee + $pilatesCurrentMonthFee;
     $nextMonthFee = $pilatesMonthlyFee;
-    $usesSplitCurrentMonth = $useType === 'add' && (
-        campaign_uses_component($activeCampaigns, 'main_club_current_month_fee', $planKey)
-        || campaign_uses_component($activeCampaigns, 'pilates_current_month_fee', $planKey)
-    );
-    $usesSplitNextMonth = $useType === 'add' && (
-        campaign_uses_component($activeCampaigns, 'main_club_next_month_fee', $planKey)
-        || campaign_uses_component($activeCampaigns, 'pilates_next_month_fee', $planKey)
-    );
+    $usesSplitCurrentMonth = campaign_uses_component($activeCampaigns, 'pilates_current_month_fee', $planKey)
+        || ($useType === 'add' && campaign_uses_component($activeCampaigns, 'main_club_current_month_fee', $planKey));
+    $usesSplitNextMonth = campaign_uses_component($activeCampaigns, 'pilates_next_month_fee', $planKey)
+        || ($useType === 'add' && campaign_uses_component($activeCampaigns, 'main_club_next_month_fee', $planKey));
     $components = [
         'join_fee' => $joinFee,
         'processing_fee' => $processingFee,

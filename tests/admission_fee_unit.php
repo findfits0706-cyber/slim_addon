@@ -30,6 +30,24 @@ function base_data(array $override = []): array
     ], $override);
 }
 
+function config_with_campaigns(array $config, array $campaigns): array
+{
+    $file = tempnam(sys_get_temp_dir(), 'findpilates-campaigns-');
+    if ($file === false) {
+        fwrite(STDERR, 'could not create temp campaign file' . PHP_EOL);
+        exit(1);
+    }
+
+    $json = json_encode(['campaigns' => $campaigns], JSON_UNESCAPED_SLASHES);
+    if ($json === false || file_put_contents($file, $json) === false) {
+        fwrite(STDERR, 'could not write temp campaign file' . PHP_EOL);
+        exit(1);
+    }
+
+    $config['admin']['campaigns_file'] = $file;
+    return $config;
+}
+
 $cases = [
     ['basic 1', base_data(['course' => 'basic', 'start_date' => '2026-07-01']), 8800, 8],
     ['basic 8', base_data(['course' => 'basic', 'start_date' => '2026-07-08']), 6600, 6],
@@ -58,6 +76,53 @@ $existingMain = calculate_fees($config, base_data([
     'start_date' => '2026-07-08',
 ]));
 assert_same_value(0, (int)$existingMain['main_club_initial_fee'], 'existing main member main fee');
+
+$singleBasicCurrentCampaign = config_with_campaigns($config, [[
+    'enabled' => true,
+    'name' => 'single basic current free',
+    'code' => '',
+    'auto_apply' => true,
+    'start_date' => '2026-07-01',
+    'end_date' => '2026-07-31',
+    'discount_mode' => 'rules',
+    'discount_rules' => [[
+        'enabled' => true,
+        'component' => 'pilates_current_month_fee',
+        'scope' => 'single_basic',
+        'discount_type' => 'free',
+        'amount' => 0,
+    ]],
+]]);
+$singleBasicCurrent = calculate_fees($singleBasicCurrentCampaign, base_data([
+    'course' => 'basic',
+    'start_date' => '2026-07-08',
+]));
+assert_same_value(6600, (int)$singleBasicCurrent['campaign_discount'], 'single basic current pilates component discount');
+assert_same_value(11000, (int)$singleBasicCurrent['initial_total'], 'single basic current pilates component total');
+assert_same_value(6600, (int)$singleBasicCurrent['fee_components']['pilates_current_month_fee'], 'single basic current pilates component present');
+
+$singleDoubleNextCampaign = config_with_campaigns($config, [[
+    'enabled' => true,
+    'name' => 'single double next free',
+    'code' => '',
+    'auto_apply' => true,
+    'start_date' => '2026-07-01',
+    'end_date' => '2026-07-31',
+    'discount_mode' => 'rules',
+    'discount_rules' => [[
+        'enabled' => true,
+        'component' => 'pilates_next_month_fee',
+        'scope' => 'single_double',
+        'discount_type' => 'free',
+        'amount' => 0,
+    ]],
+]]);
+$singleDoubleNext = calculate_fees($singleDoubleNextCampaign, base_data([
+    'course' => 'double',
+    'start_date' => '2026-07-01',
+]));
+assert_same_value(12650, (int)$singleDoubleNext['campaign_discount'], 'single double next pilates component discount');
+assert_same_value(12650, (int)$singleDoubleNext['pilates_next_month_fee'], 'single double next pilates component present');
 
 $simultaneous = calculate_fees($config, base_data([
     'use_type' => 'add',
